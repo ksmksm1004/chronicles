@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>북이스라엘/남유다 연대기 프로토타입</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <h1>북이스라엘 · 남유다 연대기</h1>
+      <p>
+        개역개정 본문(사무엘상·하, 열왕기상·하, 역대상·하) 중심의 대표 연대표를 바탕으로 구성한
+        프로토타입입니다. 연도는 학계/교회권에서 널리 쓰이는 <strong>추정 BCE</strong> 기준입니다.
+      </p>
+      <div class="legend">
+        <span><i class="dot good"></i>선한 왕</span>
+        <span><i class="dot bad"></i>악한 왕</span>
+        <span><i class="dot worst"></i>극악한 왕</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="timeline-wrap" aria-label="왕조 타임라인">
+        <div class="axis" id="axis"></div>
+
+        <article class="lane-section">
+          <h2>북이스라엘</h2>
+          <p class="lane-desc">분열왕국 시작(BCE 931)부터 사마리아 함락(BCE 722)까지</p>
+          <div class="lane" id="israel-lane"></div>
+        </article>
+
+        <article class="lane-section">
+          <h2>남유다</h2>
+          <p class="lane-desc">분열왕국 시작(BCE 931)부터 바벨론 함락(BCE 586)까지</p>
+          <div class="lane" id="judah-lane"></div>
+        </article>
+      </section>
+    </main>
+
+    <aside id="tooltip" class="tooltip" role="status" aria-live="polite"></aside>
+
+    <script src="script.js"></script>
+  </body>
+</html>
