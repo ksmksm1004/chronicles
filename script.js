@@ -57,6 +57,8 @@ const tooltip = document.getElementById('tooltip');
 const zoomInput = document.getElementById('zoom');
 const zoomLabel = document.getElementById('zoom-label');
 const timelineWrap = document.getElementById('timeline-wrap');
+const splitLabel = document.getElementById('split-label');
+const scrollAreas = Array.from(document.querySelectorAll('.section-scroll'));
 
 function toPercent(year, range) {
   const total = range.start - range.end;
@@ -76,7 +78,7 @@ function addAxisTicks(axisEl, range) {
 }
 
 function showTooltip(event, king) {
-  tooltip.innerHTML = `<strong>${king.name}</strong><br>부친/가문: ${king.father}<br>재위: BCE ${king.start}~${king.end} (${king.reign})<br>요약: ${king.event}`;
+  tooltip.innerHTML = `<strong>${king.name}</strong><br><span>부친/가문: ${king.father}</span><br><span>재위: BCE ${king.start}~${king.end} (${king.reign})</span><br><span>요약: ${king.event}</span>`;
   tooltip.style.left = `${event.clientX + 16}px`;
   tooltip.style.top = `${event.clientY + 16}px`;
   tooltip.classList.add('show');
@@ -107,7 +109,7 @@ function setZoom(val) {
 
 zoomInput.addEventListener('input', (e) => setZoom(e.target.value));
 timelineWrap.addEventListener('wheel', (e) => {
-  if (e.target.closest('.lane-section') === null && e.target.id !== 'timeline-wrap') return;
+  if (!e.target.closest('.section-scroll') && e.target.id !== 'timeline-wrap') return;
   e.preventDefault();
   const delta = e.deltaY < 0 ? 0.1 : -0.1;
   setZoom(Number(zoomInput.value) + delta);
@@ -120,3 +122,18 @@ renderLane(unitedKings, document.getElementById('united-lane'), unitedRange, tru
 renderLane(israeliKings, document.getElementById('israel-lane'), israelRange);
 renderLane(judahKings, document.getElementById('judah-lane'), judahRange);
 setZoom(zoomInput.value);
+
+
+let syncing = false;
+scrollAreas.forEach((area) => {
+  area.addEventListener('scroll', () => {
+    if (syncing) return;
+    syncing = true;
+    scrollAreas.forEach((other) => { if (other !== area) other.scrollLeft = area.scrollLeft; });
+    syncing = false;
+  });
+});
+
+if (splitLabel) {
+  splitLabel.style.paddingLeft = `${toPercent(931, unitedRange)}%`;
+}
