@@ -10,6 +10,7 @@
 * { box-sizing: border-box; }
 body {
   margin: 0;
+  overflow-x: hidden;
   font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: radial-gradient(circle at top left, #142a54 0%, var(--bg) 48%);
   color: var(--ink);
@@ -23,19 +24,21 @@ body {
 .good{background:var(--good)} .bad{background:var(--bad)} .worst{background:var(--worst)}
 .controls { width:min(1400px,94vw); margin: .2rem auto .8rem; display:flex; align-items:center; gap:.75rem; color:var(--muted); }
 .controls input { width: 220px; }
-.timeline-wrap { width:min(1400px,94vw); margin:0 auto 2.2rem; overflow:auto; padding-bottom:1rem; }
+.timeline-wrap { width:min(1400px,94vw); margin:0 auto 2.2rem; overflow-y:visible; padding-bottom:1rem; }
+.section-scroll{ overflow-x:auto; overflow-y:hidden; }
 .axis, .lane, .split-marker { position:relative; min-width: calc(1400px * var(--zoom, 1.8)); }
 .axis { height:3.2rem; border-bottom:1px solid var(--grid); margin-bottom:.7rem; }
 .tick { position:absolute; transform:translateX(-50%); color:var(--muted); font-size:.8rem; }
 .tick::before { content:''; position:absolute; top:1.1rem; left:50%; width:1px; height:1.1rem; background:var(--grid); }
 .lane-section { margin-top:1rem; background:linear-gradient(135deg, rgba(255,255,255,.03), rgba(255,255,255,.01)); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:1rem; }
+.section-scroll > .axis, .section-scroll > .lane, .split-marker > span { min-width: calc(1400px * var(--zoom, 1.8)); }
 .lane { height:180px; border-radius:12px; background-image:repeating-linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.04) 1px, transparent 1px, transparent 90px); }
 .united .lane { height:90px; }
 .split-marker { height: 44px; margin-top: .3rem; }
 .split-marker::before, .split-marker::after { content:''; position:absolute; top: 20px; width: 2px; height: 22px; background:#ffde91; }
 .split-marker::before { left: 0; transform: rotate(24deg); transform-origin: top; }
 .split-marker::after { left: 0; transform: rotate(-24deg); transform-origin: top; }
-.split-marker span { position:absolute; left:0; top:0; transform: translateX(-15%); font-size:.82rem; color:#ffde91; }
+.split-marker span { position:relative; display:block; top:0; font-size:.82rem; color:#ffde91; white-space:nowrap; }
 .bar { position:absolute; top:24px; height:38px; border:1px solid rgba(255,255,255,.45); border-radius:9px; font-size:.75rem; padding:.3rem .35rem; cursor:pointer; transition:transform .15s ease, box-shadow .18s ease; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; color:var(--ink); }
 .united .bar { top: 22px; }
 .bar[data-rating='good'] { background: color-mix(in srgb, var(--good), transparent 30%); }
