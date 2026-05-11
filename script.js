@@ -1,6 +1,12 @@
-const START = 931;
+const START = 1050;
 const END = 586;
 const RANGE = START - END;
+
+const unitedKings = [
+  { name: '사울', start: 1050, end: 1010, rating: 'bad', father: '기스', reign: '약 40년', event: '이스라엘 초대 왕, 불순종으로 왕권 약화(삼상).' },
+  { name: '다윗', start: 1010, end: 970, rating: 'good', father: '이새', reign: '40년', event: '예루살렘 수도화, 언약궤 안치, 다윗 언약(삼하).' },
+  { name: '솔로몬', start: 970, end: 931, rating: 'bad', father: '다윗', reign: '40년', event: '성전 건축, 말년 우상숭배로 분열 배경 형성(왕상 1~11장).' }
+];
 
 const israeliKings = [
   { name: '여로보암 1세', start: 931, end: 910, rating: 'bad', father: '느밧', reign: '22년', event: '금송아지 제단을 벧엘/단에 세워 북왕국 종교 분리(왕상 12장).' },
@@ -48,13 +54,17 @@ const judahKings = [
 ];
 
 const axis = document.getElementById('axis');
+const unitedLane = document.getElementById('united-lane');
 const israelLane = document.getElementById('israel-lane');
 const judahLane = document.getElementById('judah-lane');
+const splitMarker = document.getElementById('split-marker');
 const tooltip = document.getElementById('tooltip');
+const zoomInput = document.getElementById('zoom');
+const zoomLabel = document.getElementById('zoom-label');
+const timelineWrap = document.getElementById('timeline-wrap');
 
-function toPercent(year) {
-  return ((START - year) / RANGE) * 100;
-}
+function toPercent(year) { return ((START - year) / RANGE) * 100; }
+function stackedRow(index) { return (index % 3) * 50 + 18; }
 
 function addAxisTicks() {
   for (let year = START; year >= END; year -= 25) {
@@ -66,47 +76,47 @@ function addAxisTicks() {
   }
 }
 
-function stackedRow(index) {
-  return (index % 3) * 50 + 18;
+function showTooltip(event, king) {
+  tooltip.innerHTML = `<strong>${king.name}</strong>부친/가문: ${king.father}<br>재위: BCE ${king.start}~${king.end} (${king.reign})<br>요약: ${king.event}`;
+  tooltip.style.left = `${event.clientX + 16}px`;
+  tooltip.style.top = `${event.clientY + 16}px`;
+  tooltip.classList.add('show');
 }
 
-function renderLane(data, laneEl) {
+function renderLane(data, laneEl, singleRow = false) {
   data.forEach((king, index) => {
     const bar = document.createElement('button');
     bar.type = 'button';
     bar.className = 'bar';
     bar.dataset.rating = king.rating;
     bar.style.left = `${toPercent(king.start)}%`;
-    bar.style.width = `${Math.max(0.6, toPercent(king.end) - toPercent(king.start))}%`;
-    bar.style.top = `${stackedRow(index)}px`;
+    bar.style.width = `${Math.max(1.2, toPercent(king.end) - toPercent(king.start))}%`;
+    bar.style.top = `${singleRow ? 22 : stackedRow(index)}px`;
     bar.innerText = king.name;
-
-    bar.addEventListener('mousemove', (event) => {
-      tooltip.innerHTML = `
-        <strong>${king.name}</strong>
-        부친/가문: ${king.father}<br>
-        재위: BCE ${king.start}~${king.end} (${king.reign})<br>
-        요약: ${king.event}
-      `;
-      tooltip.style.left = `${event.clientX + 16}px`;
-      tooltip.style.top = `${event.clientY + 16}px`;
-      tooltip.classList.add('show');
-    });
-
-    bar.addEventListener('mouseleave', () => {
-      tooltip.classList.remove('show');
-    });
-
+    bar.addEventListener('mousemove', (e) => showTooltip(e, king));
+    bar.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
     laneEl.appendChild(bar);
   });
-
-  const endChip = document.createElement('span');
-  endChip.className = 'year-chip';
-  endChip.style.left = `${toPercent(END)}%`;
-  endChip.textContent = `BCE ${END}`;
-  laneEl.appendChild(endChip);
 }
 
+function setZoom(val) {
+  const zoom = Math.max(1, Math.min(4, Number(val)));
+  document.documentElement.style.setProperty('--zoom', zoom.toFixed(1));
+  zoomInput.value = zoom.toFixed(1);
+  zoomLabel.textContent = `${zoom.toFixed(1)}x`;
+}
+
+zoomInput.addEventListener('input', (e) => setZoom(e.target.value));
+timelineWrap.addEventListener('wheel', (e) => {
+  if (!e.ctrlKey && !e.metaKey) return;
+  e.preventDefault();
+  const delta = e.deltaY < 0 ? 0.1 : -0.1;
+  setZoom(Number(zoomInput.value) + delta);
+}, { passive: false });
+
 addAxisTicks();
+renderLane(unitedKings, unitedLane, true);
 renderLane(israeliKings, israelLane);
 renderLane(judahKings, judahLane);
+splitMarker.style.left = `${toPercent(931)}%`;
+setZoom(zoomInput.value);
