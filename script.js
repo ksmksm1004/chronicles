@@ -1,6 +1,6 @@
-const START = 1050;
-const END = 586;
-const RANGE = START - END;
+const unitedRange = { start: 1050, end: 931, tick: 10 };
+const israelRange = { start: 931, end: 722, tick: 20 };
+const judahRange = { start: 931, end: 586, tick: 25 };
 
 const unitedKings = [
   { name: '사울', start: 1050, end: 1010, rating: 'bad', father: '기스', reign: '약 40년', event: '이스라엘 초대 왕, 불순종으로 왕권 약화(삼상).' },
@@ -30,7 +30,7 @@ const israeliKings = [
   { name: '호세아', start: 732, end: 722, rating: 'bad', father: '엘라', reign: '9년', event: '사마리아 함락으로 북이스라엘 멸망(왕하 17장).' }
 ];
 
-const judahKings = [
+const judahKings = [/* unchanged data */
   { name: '르호보암', start: 931, end: 913, rating: 'bad', father: '솔로몬', reign: '17년', event: '강경정책으로 왕국 분열. 시삭 침공(왕상 12~14장).' },
   { name: '아비얌(아비야)', start: 913, end: 911, rating: 'bad', father: '르호보암', reign: '3년', event: '여로보암과 전쟁 지속(왕상 15장).' },
   { name: '아사', start: 911, end: 870, rating: 'good', father: '아비얌', reign: '41년', event: '우상 개혁, 말년에 아람 의존 문제(왕상 15장, 대하 14~16장).' },
@@ -53,44 +53,43 @@ const judahKings = [
   { name: '시드기야', start: 597, end: 586, rating: 'bad', father: '요시야(숙부)', reign: '11년', event: '반바벨론 반란 실패, 예루살렘 함락·성전 파괴(왕하 25장).' }
 ];
 
-const axis = document.getElementById('axis');
-const unitedLane = document.getElementById('united-lane');
-const israelLane = document.getElementById('israel-lane');
-const judahLane = document.getElementById('judah-lane');
-const splitMarker = document.getElementById('split-marker');
 const tooltip = document.getElementById('tooltip');
 const zoomInput = document.getElementById('zoom');
 const zoomLabel = document.getElementById('zoom-label');
 const timelineWrap = document.getElementById('timeline-wrap');
 
-function toPercent(year) { return ((START - year) / RANGE) * 100; }
+function toPercent(year, range) {
+  const total = range.start - range.end;
+  return ((range.start - year) / total) * 100;
+}
+
 function stackedRow(index) { return (index % 3) * 50 + 18; }
 
-function addAxisTicks() {
-  for (let year = START; year >= END; year -= 25) {
+function addAxisTicks(axisEl, range) {
+  for (let year = range.start; year >= range.end; year -= range.tick) {
     const tick = document.createElement('span');
     tick.className = 'tick';
-    tick.style.left = `${toPercent(year)}%`;
+    tick.style.left = `${toPercent(year, range)}%`;
     tick.textContent = `BCE ${year}`;
-    axis.appendChild(tick);
+    axisEl.appendChild(tick);
   }
 }
 
 function showTooltip(event, king) {
-  tooltip.innerHTML = `<strong>${king.name}</strong>부친/가문: ${king.father}<br>재위: BCE ${king.start}~${king.end} (${king.reign})<br>요약: ${king.event}`;
+  tooltip.innerHTML = `<strong>${king.name}</strong><br>부친/가문: ${king.father}<br>재위: BCE ${king.start}~${king.end} (${king.reign})<br>요약: ${king.event}`;
   tooltip.style.left = `${event.clientX + 16}px`;
   tooltip.style.top = `${event.clientY + 16}px`;
   tooltip.classList.add('show');
 }
 
-function renderLane(data, laneEl, singleRow = false) {
+function renderLane(data, laneEl, range, singleRow = false) {
   data.forEach((king, index) => {
     const bar = document.createElement('button');
     bar.type = 'button';
     bar.className = 'bar';
     bar.dataset.rating = king.rating;
-    bar.style.left = `${toPercent(king.start)}%`;
-    bar.style.width = `${Math.max(1.2, toPercent(king.end) - toPercent(king.start))}%`;
+    bar.style.left = `${toPercent(king.start, range)}%`;
+    bar.style.width = `${Math.max(1.2, toPercent(king.end, range) - toPercent(king.start, range))}%`;
     bar.style.top = `${singleRow ? 22 : stackedRow(index)}px`;
     bar.innerText = king.name;
     bar.addEventListener('mousemove', (e) => showTooltip(e, king));
@@ -108,15 +107,16 @@ function setZoom(val) {
 
 zoomInput.addEventListener('input', (e) => setZoom(e.target.value));
 timelineWrap.addEventListener('wheel', (e) => {
-  if (!e.ctrlKey && !e.metaKey) return;
+  if (e.target.closest('.lane-section') === null && e.target.id !== 'timeline-wrap') return;
   e.preventDefault();
   const delta = e.deltaY < 0 ? 0.1 : -0.1;
   setZoom(Number(zoomInput.value) + delta);
 }, { passive: false });
 
-addAxisTicks();
-renderLane(unitedKings, unitedLane, true);
-renderLane(israeliKings, israelLane);
-renderLane(judahKings, judahLane);
-splitMarker.style.left = `${toPercent(931)}%`;
+addAxisTicks(document.getElementById('united-axis'), unitedRange);
+addAxisTicks(document.getElementById('israel-axis'), israelRange);
+addAxisTicks(document.getElementById('judah-axis'), judahRange);
+renderLane(unitedKings, document.getElementById('united-lane'), unitedRange, true);
+renderLane(israeliKings, document.getElementById('israel-lane'), israelRange);
+renderLane(judahKings, document.getElementById('judah-lane'), judahRange);
 setZoom(zoomInput.value);
