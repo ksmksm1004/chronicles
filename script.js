@@ -58,7 +58,7 @@ const zoomInput = document.getElementById('zoom');
 const zoomLabel = document.getElementById('zoom-label');
 const timelineWrap = document.getElementById('timeline-wrap');
 const splitLabel = document.getElementById('split-label');
-const scrollAreas = Array.from(document.querySelectorAll('.section-scroll'));
+const syncScrollAreas = Array.from(document.querySelectorAll('.section-scroll[data-sync-group="divided"]'));
 
 function toPercent(year, range) {
   const total = range.start - range.end;
@@ -110,6 +110,10 @@ function setZoom(val) {
 zoomInput.addEventListener('input', (e) => setZoom(e.target.value));
 timelineWrap.addEventListener('wheel', (e) => {
   if (!e.target.closest('.section-scroll') && e.target.id !== 'timeline-wrap') return;
+
+  const isPinchZoom = e.ctrlKey || e.metaKey;
+  if (!isPinchZoom) return;
+
   e.preventDefault();
   const delta = e.deltaY < 0 ? 0.1 : -0.1;
   setZoom(Number(zoomInput.value) + delta);
@@ -125,11 +129,13 @@ setZoom(zoomInput.value);
 
 
 let syncing = false;
-scrollAreas.forEach((area) => {
+syncScrollAreas.forEach((area) => {
   area.addEventListener('scroll', () => {
     if (syncing) return;
     syncing = true;
-    scrollAreas.forEach((other) => { if (other !== area) other.scrollLeft = area.scrollLeft; });
+    syncScrollAreas.forEach((other) => {
+      if (other !== area) other.scrollLeft = area.scrollLeft;
+    });
     syncing = false;
   });
 });
