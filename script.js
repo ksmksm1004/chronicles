@@ -1,5 +1,5 @@
 const unitedRange = { start: 1050, end: 931, tick: 10 };
-const israelRange = { start: 931, end: 722, tick: 20 };
+const israelRange = { start: 931, end: 586, tick: 25 };
 const judahRange = { start: 931, end: 586, tick: 25 };
 
 const unitedKings = [
@@ -102,7 +102,7 @@ function renderLane(data, laneEl, range, singleRow = false) {
 
 function setZoom(val) {
   const zoom = Math.max(1, Math.min(4, Number(val)));
-  document.documentElement.style.setProperty('--zoom', zoom.toFixed(1));
+  document.documentElement.style.setProperty('--divided-zoom', zoom.toFixed(1));
   zoomInput.value = zoom.toFixed(1);
   zoomLabel.textContent = `${zoom.toFixed(1)}x`;
 }
@@ -141,5 +141,5 @@ syncScrollAreas.forEach((area) => {
 });
 
 if (splitLabel) {
-  splitLabel.style.paddingLeft = `${toPercent(931, unitedRange)}%`;
+  splitLabel.style.paddingLeft = `${toPercent(931, israelRange)}%`;
 }
