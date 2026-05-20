@@ -3,20 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>북이스라엘/남유다 연대기</title>
+    <title>구약 연대기</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="hero">
-      <h1>통일왕국 → 분열왕국(북이스라엘 · 남유다) 연대기</h1>
+      <h1>구약 전체 연대기</h1>
       <p>
-        사울-다윗-솔로몬(통일왕국) 이후, BCE 931년 분열 지점부터 북이스라엘/남유다를 동시에 비교하는
-        타임라인입니다. 연도는 대표적 추정 BCE 기준이며, 확대/축소로 짧은 재위 왕도 읽기 쉽게 볼 수 있습니다.
+        창세기 족장 시대부터 사사, 통일왕국, 분열왕국, 포로기와 귀환기까지 한 흐름으로 보는
+        타임라인입니다. 왕의 재위는 막대로, 선지자와 제사장은 얇은 기간선으로 표시했습니다.
       </p>
       <div class="legend">
         <span><i class="dot good"></i>선한 왕</span>
         <span><i class="dot bad"></i>악한 왕</span>
         <span><i class="dot worst"></i>극악한 왕</span>
+        <span><i class="line-sample prophet"></i>선지자</span>
+        <span><i class="line-sample priest"></i>제사장</span>
       </div>
     </header>
 
@@ -29,6 +31,15 @@
       </section>
 
       <section class="timeline-wrap" id="timeline-wrap" aria-label="왕조 타임라인">
+        <article class="lane-section primeval">
+          <h2>창세기~사사 시대</h2>
+          <div class="section-scroll">
+            <div class="axis" id="early-axis"></div>
+            <p class="lane-desc">족장 → 출애굽 → 가나안 정착 → 사사 시대 → 사무엘</p>
+            <div class="lane overview-lane" id="early-lane"></div>
+          </div>
+        </article>
+
         <article class="lane-section united">
           <h2>통일왕국</h2>
           <div class="section-scroll">
@@ -55,8 +66,17 @@
           <h2>남유다</h2>
           <div class="section-scroll" data-sync-group="divided">
             <div class="axis" id="judah-axis"></div>
-            <p class="lane-desc">분열왕국 시작(BCE 931)부터 바벨론 함락(BCE 586)까지</p>
+            <p class="lane-desc">분열왕국 시작(BCE 931)부터 바벨론 함락(BCE 586)과 포로기 직전까지</p>
             <div class="lane" id="judah-lane"></div>
+          </div>
+        </article>
+
+        <article class="lane-section exile">
+          <h2>포로기·귀환기</h2>
+          <div class="section-scroll">
+            <div class="axis" id="exile-axis"></div>
+            <p class="lane-desc">예루살렘 함락 이후 바벨론 포로, 성전 재건, 에스라·느헤미야, 말라기까지</p>
+            <div class="lane overview-lane" id="exile-lane"></div>
           </div>
         </article>
       </section>

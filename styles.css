@@ -6,6 +6,9 @@
   --good: #2fb46d;
   --bad: #d16b6b;
   --worst: #9e1b1b;
+  --prophet: #ff3b1f;
+  --priest: #ffd166;
+  --era: #506fbd;
 }
 * { box-sizing: border-box; }
 body {
@@ -22,6 +25,9 @@ body {
 .legend span { display:inline-flex; align-items:center; gap:.4rem; }
 .dot { width:.85rem; aspect-ratio:1; border-radius:50%; display:inline-block; }
 .good{background:var(--good)} .bad{background:var(--bad)} .worst{background:var(--worst)}
+.line-sample { width:1.8rem; height:2px; display:inline-block; position:relative; top:-1px; }
+.line-sample.prophet { background:var(--prophet); }
+.line-sample.priest { background:var(--priest); }
 .controls { width:min(1400px,94vw); margin: .2rem auto .8rem; display:flex; align-items:center; gap:.75rem; color:var(--muted); }
 .controls input { width: 220px; }
 .timeline-wrap { width:min(1400px,94vw); margin:0 auto 2.2rem; overflow-y:visible; padding-bottom:1rem; }
@@ -33,12 +39,17 @@ body {
 .lane-section { margin-top:1rem; background:linear-gradient(135deg, rgba(255,255,255,.03), rgba(255,255,255,.01)); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:1rem; }
 .united .section-scroll > .axis,
 .united .section-scroll > .lane { min-width: calc(1400px * var(--united-zoom, 1)); }
+.primeval .section-scroll > .axis,
+.primeval .section-scroll > .lane { min-width: 1700px; }
+.exile .section-scroll > .axis,
+.exile .section-scroll > .lane { min-width: 1400px; }
 
 .section-scroll[data-sync-group="divided"] > .axis,
 .section-scroll[data-sync-group="divided"] > .lane,
 .split-marker > span { min-width: calc(1400px * var(--divided-zoom, 1.8)); }
-.lane { height:180px; border-radius:12px; background-image:repeating-linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.04) 1px, transparent 1px, transparent 90px); }
-.united .lane { height:90px; }
+.lane { height:280px; border-radius:12px; background-image:repeating-linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.04) 1px, transparent 1px, transparent 90px); }
+.united .lane { height:150px; }
+.overview-lane { height:230px; }
 .split-marker { height: 44px; margin-top: .3rem; }
 .split-marker::before, .split-marker::after { content:''; position:absolute; top: 20px; width: 2px; height: 22px; background:#ffde91; }
 .split-marker::before { left: 0; transform: rotate(24deg); transform-origin: top; }
@@ -50,6 +61,75 @@ body {
 .bar[data-rating='bad'] { background: color-mix(in srgb, var(--bad), transparent 30%); }
 .bar[data-rating='worst'] { background: color-mix(in srgb, var(--worst), transparent 22%); }
 .bar:hover,.bar:focus-visible { transform: translateY(-3px) scale(1.02); box-shadow: 0 12px 22px rgba(0,0,0,.3); z-index:9; }
+.era-bar {
+  position:absolute;
+  height:34px;
+  border:1px solid rgba(255,255,255,.32);
+  border-radius:8px;
+  background:color-mix(in srgb, var(--era), transparent 26%);
+  color:var(--ink);
+  font-size:.74rem;
+  padding:.25rem .4rem;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  cursor:pointer;
+  transition:transform .15s ease, box-shadow .18s ease;
+}
+.era-bar:hover,
+.era-bar:focus-visible {
+  transform: translateY(-3px) scale(1.015);
+  box-shadow: 0 12px 22px rgba(0,0,0,.28);
+  z-index:9;
+}
+.ministry-line {
+  position:absolute;
+  height:24px;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  color:var(--ink);
+  cursor:pointer;
+  min-width:2rem;
+}
+.ministry-line::before {
+  content:'';
+  position:absolute;
+  top:3px;
+  left:0;
+  width:100%;
+  height:2px;
+  background:var(--prophet);
+  box-shadow:0 0 0 1px rgba(255,255,255,.05);
+}
+.ministry-line[data-role='priest']::before { background:var(--priest); }
+.ministry-line span {
+  position:absolute;
+  top:7px;
+  left:50%;
+  transform:translateX(-50%);
+  max-width:100%;
+  color:var(--ink);
+  font-size:.72rem;
+  font-weight:700;
+  line-height:1;
+  white-space:nowrap;
+  text-shadow:0 1px 3px rgba(0,0,0,.75);
+}
+.ministry-line:hover,
+.ministry-line:focus-visible {
+  z-index:10;
+}
+.ministry-line:hover::before,
+.ministry-line:focus-visible::before {
+  height:3px;
+  box-shadow:0 0 12px color-mix(in srgb, var(--prophet), transparent 35%);
+}
+.ministry-line[data-role='priest']:hover::before,
+.ministry-line[data-role='priest']:focus-visible::before {
+  box-shadow:0 0 12px color-mix(in srgb, var(--priest), transparent 35%);
+}
 .lane-desc{margin:.25rem 0 .8rem; color:var(--muted); font-size:.9rem;}
 .tooltip { position:fixed; z-index:20; pointer-events:none; max-width:min(320px,88vw); background:rgba(7,16,33,.96); border:1px solid rgba(255,255,255,.2); border-radius:10px; padding:.7rem .8rem; font-size:.84rem; line-height:1.4; opacity:0; transition:opacity .1s ease; }
 .tooltip.show { opacity:1; }
