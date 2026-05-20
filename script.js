@@ -19,9 +19,19 @@ const earlyProphetsPriests = [
   { name: '아론', start: 1529, end: 1406, role: 'priest', period: 'BCE 약 1529~1406', event: '초대 대제사장. 제사장 계보의 출발점.' },
   { name: '미리암', start: 1520, end: 1406, role: 'prophet', period: 'BCE 약 1520~1406', event: '출애굽 세대의 여선지자(출 15장).' },
   { name: '여호수아', start: 1406, end: 1375, role: 'prophet', period: 'BCE 약 1406~1375', event: '모세 이후 가나안 정착을 이끈 지도자.' },
-  { name: '드보라', start: 1200, end: 1170, role: 'prophet', period: 'BCE 약 1200년대', event: '사사이자 여선지자. 바락과 함께 가나안 왕 야빈을 물리침.' },
+  { name: '드보라', start: 1209, end: 1169, role: 'prophet', period: 'BCE 약 1209~1169', event: '사사이자 여선지자. 바락과 함께 가나안 왕 야빈을 물리침.' },
   { name: '엘리', start: 1120, end: 1080, role: 'priest', period: 'BCE 약 1120~1080', event: '실로의 제사장. 사무엘의 어린 시절 배경.' },
   { name: '사무엘', start: 1080, end: 1015, role: 'prophet', period: 'BCE 약 1080~1015', event: '마지막 사사이자 선지자. 사울과 다윗에게 기름 부음.' }
+];
+
+const earlyJudges = [
+  { name: '옷니엘', start: 1350, end: 1310, role: 'judge', period: 'BCE 약 1350~1310', event: '갈렙의 조카로, 메소보다미아 압제에서 이스라엘을 구원한 초기 사사.' },
+  { name: '에훗', start: 1290, end: 1210, role: 'judge', period: 'BCE 약 1290~1210', event: '모압 왕 에글론의 압제에서 이스라엘을 구원한 왼손잡이 사사.' },
+  { name: '드보라·바락', start: 1209, end: 1169, role: 'judge', period: 'BCE 약 1209~1169', event: '야빈과 시스라를 물리친 사사 시대의 대표적 승리.' },
+  { name: '기드온', start: 1162, end: 1122, role: 'judge', period: 'BCE 약 1162~1122', event: '미디안 압제에서 이스라엘을 구원한 사사.' },
+  { name: '입다', start: 1087, end: 1081, role: 'judge', period: 'BCE 약 1087~1081', event: '암몬과의 전쟁에서 활약한 길르앗 출신 사사.' },
+  { name: '삼손', start: 1085, end: 1065, role: 'judge', period: 'BCE 약 1085~1065', event: '블레셋 압제기에 활동한 단 지파 사사.' },
+  { name: '사무엘', start: 1080, end: 1050, role: 'judge', period: 'BCE 약 1080~1050', event: '왕정 이전 마지막 사사. 사울 즉위까지 이스라엘을 이끎.' }
 ];
 
 const unitedKings = [
@@ -111,6 +121,7 @@ const judahProphetsPriests = [
 const exileEvents = [
   { name: '바벨론 포로', start: 586, end: 539, type: 'era', period: 'BCE 586~539', event: '예루살렘 함락 이후 바벨론 포로기.' },
   { name: '귀환 시작', start: 539, end: 516, type: 'era', period: 'BCE 539~516', event: '고레스 칙령 이후 귀환과 제2성전 재건.' },
+  { name: '에스더 사건', start: 483, end: 473, type: 'era', period: 'BCE 약 483~473', event: '페르시아 궁정에서 유다 백성이 보존된 사건.' },
   { name: '성벽 재건', start: 458, end: 445, type: 'era', period: 'BCE 458~445', event: '에스라의 율법 개혁과 느헤미야의 성벽 재건.' },
   { name: '구약 말기', start: 445, end: 430, type: 'era', period: 'BCE 약 445~430', event: '말라기 전후로 구약 예언 전통이 마무리되는 시기.' }
 ];
@@ -120,7 +131,9 @@ const exileProphetsPriests = [
   { name: '다니엘', start: 605, end: 536, role: 'prophet', period: 'BCE 약 605~536', event: '바벨론과 페르시아 궁정에서 활동한 포로기 인물.' },
   { name: '학개', start: 520, end: 515, role: 'prophet', period: 'BCE 약 520~515', event: '성전 재건을 촉구한 귀환기 선지자.' },
   { name: '스가랴', start: 520, end: 480, role: 'prophet', period: 'BCE 약 520~480', event: '성전 재건과 메시아적 회복을 환상으로 선포.' },
+  { name: '에스더', start: 483, end: 473, role: 'leader', period: 'BCE 약 483~473', event: '페르시아 궁정에서 유다인을 위해 중재한 왕후.' },
   { name: '에스라', start: 458, end: 430, role: 'priest', period: 'BCE 약 458~430', event: '제사장 겸 율법학자. 귀환 공동체의 율법 개혁을 이끎.' },
+  { name: '느헤미야', start: 445, end: 433, role: 'leader', period: 'BCE 약 445~433', event: '예루살렘 성벽 재건과 공동체 개혁을 이끈 총독.' },
   { name: '말라기', start: 440, end: 430, role: 'prophet', period: 'BCE 약 440~430', event: '제사장과 백성의 언약 불성실을 책망한 구약 말기의 선지자.' }
 ];
 
@@ -130,6 +143,12 @@ const zoomLabel = document.getElementById('zoom-label');
 const timelineWrap = document.getElementById('timeline-wrap');
 const splitLabel = document.getElementById('split-label');
 const syncScrollAreas = Array.from(document.querySelectorAll('.section-scroll[data-sync-group="divided"]'));
+const zoomTargets = {
+  early: { cssVar: '--early-zoom', value: 1 },
+  united: { cssVar: '--united-zoom', value: 1 },
+  divided: { cssVar: '--divided-zoom', value: Number(zoomInput.value) },
+  exile: { cssVar: '--exile-zoom', value: 1 }
+};
 
 function toPercent(year, range) {
   const total = range.start - range.end;
@@ -153,7 +172,13 @@ function addAxisTicks(axisEl, range) {
 }
 
 function showTooltip(event, item) {
-  const roleLabel = item.role === 'priest' ? '제사장' : item.role === 'prophet' ? '선지자' : '시대';
+  const roleLabels = {
+    priest: '제사장',
+    prophet: '선지자',
+    judge: '사사',
+    leader: '주요 인물'
+  };
+  const roleLabel = roleLabels[item.role] || '시대';
   const detail = item.reign
     ? `<span>부친/가문: ${item.father}</span><br><span>재위: BCE ${item.start}~${item.end} (${item.reign})</span>`
     : `<span>구분: ${roleLabel}</span><br><span>기간: ${item.period || `BCE 약 ${item.start}~${item.end}`}</span>`;
@@ -196,7 +221,7 @@ function renderEraLane(data, laneEl, range) {
   });
 }
 
-function renderMinistryLines(data, laneEl, range, topBase = 72) {
+function renderMinistryLines(data, laneEl, range, topBase = 72, rowCount = 4) {
   data.forEach((item, index) => {
     if (item.start < range.end || item.end > range.start) return;
 
@@ -209,7 +234,7 @@ function renderMinistryLines(data, laneEl, range, topBase = 72) {
     line.dataset.role = item.role;
     line.style.left = `${toPercent(start, range)}%`;
     line.style.width = `${Math.max(1.4, toPercent(end, range) - toPercent(start, range))}%`;
-    line.style.top = `${topBase + (index % 4) * 26}px`;
+    line.style.top = `${topBase + (index % rowCount) * 26}px`;
     line.innerHTML = `<span>${item.name}</span>`;
     line.addEventListener('mousemove', (e) => showTooltip(e, item));
     line.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
@@ -219,21 +244,32 @@ function renderMinistryLines(data, laneEl, range, topBase = 72) {
 
 function setZoom(val) {
   const zoom = Math.max(1, Math.min(4, Number(val)));
-  document.documentElement.style.setProperty('--divided-zoom', zoom.toFixed(1));
+  Object.keys(zoomTargets).forEach((key) => setZoomFor(key, zoom));
   zoomInput.value = zoom.toFixed(1);
   zoomLabel.textContent = `${zoom.toFixed(1)}x`;
 }
 
+function setZoomFor(key, val) {
+  const target = zoomTargets[key];
+  if (!target) return;
+
+  const zoom = Math.max(1, Math.min(4, Number(val)));
+  target.value = zoom;
+  document.documentElement.style.setProperty(target.cssVar, zoom.toFixed(1));
+}
+
 zoomInput.addEventListener('input', (e) => setZoom(e.target.value));
 timelineWrap.addEventListener('wheel', (e) => {
-  if (!e.target.closest('.section-scroll') && e.target.id !== 'timeline-wrap') return;
+  const sectionScroll = e.target.closest('.section-scroll');
+  if (!sectionScroll && e.target.id !== 'timeline-wrap') return;
 
   const isPinchZoom = e.ctrlKey || e.metaKey;
   if (!isPinchZoom) return;
 
   e.preventDefault();
   const delta = e.deltaY < 0 ? 0.1 : -0.1;
-  setZoom(Number(zoomInput.value) + delta);
+  const zoomKey = sectionScroll?.dataset.zoomKey || 'divided';
+  setZoomFor(zoomKey, zoomTargets[zoomKey].value + delta);
 }, { passive: false });
 
 addAxisTicks(document.getElementById('early-axis'), earlyRange);
@@ -244,6 +280,7 @@ addAxisTicks(document.getElementById('exile-axis'), exileRange);
 
 renderEraLane(earlyEvents, document.getElementById('early-lane'), earlyRange);
 renderMinistryLines(earlyProphetsPriests, document.getElementById('early-lane'), earlyRange, 116);
+renderMinistryLines(earlyJudges, document.getElementById('early-lane'), earlyRange, 220, 3);
 
 renderLane(unitedKings, document.getElementById('united-lane'), unitedRange, true);
 renderMinistryLines(unitedProphetsPriests, document.getElementById('united-lane'), unitedRange, 72);
@@ -255,7 +292,7 @@ renderLane(judahKings, document.getElementById('judah-lane'), judahRange);
 renderMinistryLines(judahProphetsPriests, document.getElementById('judah-lane'), judahRange, 172);
 
 renderEraLane(exileEvents, document.getElementById('exile-lane'), exileRange);
-renderMinistryLines(exileProphetsPriests, document.getElementById('exile-lane'), exileRange, 112);
+renderMinistryLines(exileProphetsPriests, document.getElementById('exile-lane'), exileRange, 112, 6);
 setZoom(zoomInput.value);
 
 

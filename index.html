@@ -19,6 +19,8 @@
         <span><i class="dot worst"></i>극악한 왕</span>
         <span><i class="line-sample prophet"></i>선지자</span>
         <span><i class="line-sample priest"></i>제사장</span>
+        <span><i class="line-sample judge"></i>사사</span>
+        <span><i class="line-sample leader"></i>주요 인물</span>
       </div>
     </header>
 
@@ -33,7 +35,7 @@
       <section class="timeline-wrap" id="timeline-wrap" aria-label="왕조 타임라인">
         <article class="lane-section primeval">
           <h2>창세기~사사 시대</h2>
-          <div class="section-scroll">
+          <div class="section-scroll" data-zoom-key="early">
             <div class="axis" id="early-axis"></div>
             <p class="lane-desc">족장 → 출애굽 → 가나안 정착 → 사사 시대 → 사무엘</p>
             <div class="lane overview-lane" id="early-lane"></div>
@@ -42,7 +44,7 @@
 
         <article class="lane-section united">
           <h2>통일왕국</h2>
-          <div class="section-scroll">
+          <div class="section-scroll" data-zoom-key="united">
             <div class="axis" id="united-axis"></div>
             <p class="lane-desc">사울 → 다윗 → 솔로몬 (분열 이전)</p>
             <div class="lane" id="united-lane"></div>
@@ -55,7 +57,7 @@
 
         <article class="lane-section">
           <h2>북이스라엘</h2>
-          <div class="section-scroll" data-sync-group="divided">
+          <div class="section-scroll" data-sync-group="divided" data-zoom-key="divided">
             <div class="axis" id="israel-axis"></div>
             <p class="lane-desc">분열왕국 시작(BCE 931)부터 사마리아 함락(BCE 722)까지</p>
             <div class="lane" id="israel-lane"></div>
@@ -64,7 +66,7 @@
 
         <article class="lane-section">
           <h2>남유다</h2>
-          <div class="section-scroll" data-sync-group="divided">
+          <div class="section-scroll" data-sync-group="divided" data-zoom-key="divided">
             <div class="axis" id="judah-axis"></div>
             <p class="lane-desc">분열왕국 시작(BCE 931)부터 바벨론 함락(BCE 586)과 포로기 직전까지</p>
             <div class="lane" id="judah-lane"></div>
@@ -73,7 +75,7 @@
 
         <article class="lane-section exile">
           <h2>포로기·귀환기</h2>
-          <div class="section-scroll">
+          <div class="section-scroll" data-zoom-key="exile">
             <div class="axis" id="exile-axis"></div>
             <p class="lane-desc">예루살렘 함락 이후 바벨론 포로, 성전 재건, 에스라·느헤미야, 말라기까지</p>
             <div class="lane overview-lane" id="exile-lane"></div>

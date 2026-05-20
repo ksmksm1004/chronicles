@@ -8,6 +8,8 @@
   --worst: #9e1b1b;
   --prophet: #ff3b1f;
   --priest: #ffd166;
+  --judge: #39c7b8;
+  --leader: #8fb7ff;
   --era: #506fbd;
 }
 * { box-sizing: border-box; }
@@ -28,6 +30,8 @@ body {
 .line-sample { width:1.8rem; height:2px; display:inline-block; position:relative; top:-1px; }
 .line-sample.prophet { background:var(--prophet); }
 .line-sample.priest { background:var(--priest); }
+.line-sample.judge { background:var(--judge); }
+.line-sample.leader { background:var(--leader); }
 .controls { width:min(1400px,94vw); margin: .2rem auto .8rem; display:flex; align-items:center; gap:.75rem; color:var(--muted); }
 .controls input { width: 220px; }
 .timeline-wrap { width:min(1400px,94vw); margin:0 auto 2.2rem; overflow-y:visible; padding-bottom:1rem; }
@@ -40,16 +44,16 @@ body {
 .united .section-scroll > .axis,
 .united .section-scroll > .lane { min-width: calc(1400px * var(--united-zoom, 1)); }
 .primeval .section-scroll > .axis,
-.primeval .section-scroll > .lane { min-width: 1700px; }
+.primeval .section-scroll > .lane { min-width: calc(1700px * var(--early-zoom, 1)); }
 .exile .section-scroll > .axis,
-.exile .section-scroll > .lane { min-width: 1400px; }
+.exile .section-scroll > .lane { min-width: calc(1400px * var(--exile-zoom, 1)); }
 
 .section-scroll[data-sync-group="divided"] > .axis,
 .section-scroll[data-sync-group="divided"] > .lane,
 .split-marker > span { min-width: calc(1400px * var(--divided-zoom, 1.8)); }
 .lane { height:280px; border-radius:12px; background-image:repeating-linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.04) 1px, transparent 1px, transparent 90px); }
 .united .lane { height:150px; }
-.overview-lane { height:230px; }
+.overview-lane { height:300px; }
 .split-marker { height: 44px; margin-top: .3rem; }
 .split-marker::before, .split-marker::after { content:''; position:absolute; top: 20px; width: 2px; height: 22px; background:#ffde91; }
 .split-marker::before { left: 0; transform: rotate(24deg); transform-origin: top; }
@@ -104,6 +108,8 @@ body {
   box-shadow:0 0 0 1px rgba(255,255,255,.05);
 }
 .ministry-line[data-role='priest']::before { background:var(--priest); }
+.ministry-line[data-role='judge']::before { background:var(--judge); }
+.ministry-line[data-role='leader']::before { background:var(--leader); }
 .ministry-line span {
   position:absolute;
   top:7px;
@@ -129,6 +135,14 @@ body {
 .ministry-line[data-role='priest']:hover::before,
 .ministry-line[data-role='priest']:focus-visible::before {
   box-shadow:0 0 12px color-mix(in srgb, var(--priest), transparent 35%);
+}
+.ministry-line[data-role='judge']:hover::before,
+.ministry-line[data-role='judge']:focus-visible::before {
+  box-shadow:0 0 12px color-mix(in srgb, var(--judge), transparent 35%);
+}
+.ministry-line[data-role='leader']:hover::before,
+.ministry-line[data-role='leader']:focus-visible::before {
+  box-shadow:0 0 12px color-mix(in srgb, var(--leader), transparent 35%);
 }
 .lane-desc{margin:.25rem 0 .8rem; color:var(--muted); font-size:.9rem;}
 .tooltip { position:fixed; z-index:20; pointer-events:none; max-width:min(320px,88vw); background:rgba(7,16,33,.96); border:1px solid rgba(255,255,255,.2); border-radius:10px; padding:.7rem .8rem; font-size:.84rem; line-height:1.4; opacity:0; transition:opacity .1s ease; }
