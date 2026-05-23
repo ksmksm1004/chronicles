@@ -27,7 +27,7 @@ const earlyProphetsPriests = [
 const earlyJudges = [
   { name: '옷니엘', start: 1350, end: 1310, role: 'judge', period: 'BCE 약 1350~1310', event: '갈렙의 조카로, 메소보다미아 압제에서 이스라엘을 구원한 초기 사사.' },
   { name: '에훗', start: 1290, end: 1210, role: 'judge', period: 'BCE 약 1290~1210', event: '모압 왕 에글론의 압제에서 이스라엘을 구원한 왼손잡이 사사.' },
-  { name: '드보라·바락', start: 1209, end: 1169, role: 'judge', period: 'BCE 약 1209~1169', event: '야빈과 시스라를 물리친 사사 시대의 대표적 승리.' },
+  { name: '바락', start: 1209, end: 1169, role: 'judge', period: 'BCE 약 1209~1169', event: '야빈과 시스라를 물리친 사사 시대의 대표적 승리.' },
   { name: '기드온', start: 1162, end: 1122, role: 'judge', period: 'BCE 약 1162~1122', event: '미디안 압제에서 이스라엘을 구원한 사사.' },
   { name: '입다', start: 1087, end: 1081, role: 'judge', period: 'BCE 약 1087~1081', event: '암몬과의 전쟁에서 활약한 길르앗 출신 사사.' },
   { name: '삼손', start: 1085, end: 1065, role: 'judge', period: 'BCE 약 1085~1065', event: '블레셋 압제기에 활동한 단 지파 사사.' },
