@@ -577,6 +577,41 @@ function setZoomFor(key, val) {
   document.documentElement.style.setProperty(target.cssVar, zoom.toFixed(1));
 }
 
+function getZoomContentWidth(sectionScroll) {
+  const zoomContent = sectionScroll.querySelector('.lane, .gospel-lane, .axis');
+  return zoomContent?.scrollWidth || sectionScroll.scrollWidth;
+}
+
+function zoomAroundPointer(sectionScroll, zoomKey, delta, clientX) {
+  const target = zoomTargets[zoomKey];
+  if (!target || !sectionScroll) return;
+
+  const beforeWidth = getZoomContentWidth(sectionScroll);
+  const rect = sectionScroll.getBoundingClientRect();
+  const pointerX = clientX - rect.left;
+  const anchorRatio = beforeWidth > 0
+    ? (sectionScroll.scrollLeft + pointerX) / beforeWidth
+    : 0;
+
+  const nextZoom = Math.max(1, Math.min(4, target.value + delta));
+  if (nextZoom === target.value) return;
+
+  setZoomFor(zoomKey, nextZoom);
+
+  requestAnimationFrame(() => {
+    const linkedAreas = sectionScroll.dataset.syncGroup
+      ? Array.from(document.querySelectorAll(`.section-scroll[data-sync-group="${sectionScroll.dataset.syncGroup}"]`))
+      : [sectionScroll];
+
+    linkedAreas.forEach((area) => {
+      const areaRect = area.getBoundingClientRect();
+      const areaPointerX = area === sectionScroll ? pointerX : Math.min(Math.max(clientX - areaRect.left, 0), area.clientWidth);
+      const afterWidth = getZoomContentWidth(area);
+      area.scrollLeft = anchorRatio * afterWidth - areaPointerX;
+    });
+  });
+}
+
 zoomInput.addEventListener('input', (e) => setZoom(e.target.value));
 timelinePages.forEach((page) => {
   page.addEventListener('wheel', (e) => {
@@ -589,7 +624,7 @@ timelinePages.forEach((page) => {
     e.preventDefault();
     const delta = e.deltaY < 0 ? 0.1 : -0.1;
     const zoomKey = sectionScroll?.dataset.zoomKey || 'divided';
-    setZoomFor(zoomKey, zoomTargets[zoomKey].value + delta);
+    zoomAroundPointer(sectionScroll, zoomKey, delta, e.clientX);
   }, { passive: false });
 });
 
