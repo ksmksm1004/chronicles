@@ -199,9 +199,24 @@ function showTooltip(event, item) {
     ? `<span>부친/가문: ${item.father}</span><br><span>재위: BCE ${item.start}~${item.end} (${item.reign})</span>`
     : `<span>구분: ${roleLabel}</span><br><span>기간: ${item.period || `BCE 약 ${item.start}~${item.end}`}</span>`;
   tooltip.innerHTML = `<strong>${item.name}</strong><br>${detail}<br><span>요약: ${item.event}</span>`;
-  tooltip.style.left = `${event.clientX + 16}px`;
-  tooltip.style.top = `${event.clientY + 16}px`;
   tooltip.classList.add('show');
+
+  const gap = 16;
+  const edgePadding = 12;
+  const { width, height } = tooltip.getBoundingClientRect();
+  let left = event.clientX + gap;
+  let top = event.clientY + gap;
+
+  if (left + width + edgePadding > window.innerWidth) {
+    left = event.clientX - width - gap;
+  }
+
+  if (top + height + edgePadding > window.innerHeight) {
+    top = event.clientY - height - gap;
+  }
+
+  tooltip.style.left = `${Math.max(edgePadding, Math.min(left, window.innerWidth - width - edgePadding))}px`;
+  tooltip.style.top = `${Math.max(edgePadding, Math.min(top, window.innerHeight - height - edgePadding))}px`;
 }
 
 function renderLane(data, laneEl, range, singleRow = false, rowCount = 3, topBase = 18) {
