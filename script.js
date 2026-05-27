@@ -141,11 +141,11 @@ const foreignKings = [
   { name: '느부갓네살 2세', start: 605, end: 562, rating: 'babylon', empire: '신바벨론', reign: '43년', books: '에스겔, 다니엘, 에스라', event: '예루살렘 포위와 포로 사건의 중심 왕. 다니엘과 세 친구가 활동한 바벨론 왕(단 1~4장).' },
   { name: '에윌므로닥', start: 562, end: 560, rating: 'babylon', empire: '신바벨론', reign: '2년', books: '열왕기하, 예레미야', event: '여호야긴을 옥에서 풀어 높인 왕. 포로기 후반 배경을 잇는 바벨론 왕(왕하 25장, 렘 52장).' },
   { name: '네리글리살', start: 560, end: 556, rating: 'babylon', empire: '신바벨론', reign: '4년', books: '역사 자료', event: '성경에는 왕명으로 직접 등장하지 않지만 느부갓네살 이후 바벨론 왕위 계승 흐름에 포함된다.' },
-  { name: '라바시마르둑', start: 556, end: 556, rating: 'babylon', empire: '신바벨론', reign: '수개월', books: '역사 자료', event: '짧게 통치한 바벨론 왕. 포로기 바벨론 왕조 말기의 과도기 인물이다.' },
+  { name: '라바시마르둑', start: 556, end: 556, rating: 'babylon', empire: '신바벨론', reign: '수개월', books: '역사 자료', row: 4, event: '짧게 통치한 바벨론 왕. 포로기 바벨론 왕조 말기의 과도기 인물이다.' },
   { name: '나보니두스', start: 556, end: 539, rating: 'babylon', empire: '신바벨론', reign: '17년', books: '역사 자료, 다니엘 배경', event: '바벨론의 마지막 왕. 그의 아들 벨사살이 바벨론에서 왕권을 대행한 것으로 설명된다.' },
   { name: '벨사살', start: 553, end: 539, rating: 'babylon', empire: '신바벨론', reign: '공동/섭정 통치', books: '다니엘', event: '벽에 쓰인 글 사건과 바벨론 함락 밤의 왕으로 등장한다(단 5장).' },
   { name: '고레스 2세', start: 559, end: 530, rating: 'persia', empire: '바사', reign: '29년(바사), BCE 539부터 바벨론 통치', books: '다니엘, 에스라, 역대하', row: 3, event: '바사 왕으로 바벨론을 정복하고 유다 귀환과 성전 재건 칙령을 내린 왕(스 1장).' },
-  { name: '다리오 메대', start: 539, end: 538, rating: 'uncertain', empire: '메대/바사 관련', reign: '성경상 단기 통치', books: '다니엘', event: '다니엘 6장에 등장한다. 역사적 동일시는 고레스 휘하 총독 또는 문학적/왕명 전승 등으로 논의된다.' },
+  { name: '다리오 메대', start: 539, end: 538, rating: 'uncertain', empire: '메대/바사 관련', reign: '성경상 단기 통치', books: '다니엘', row: 4, event: '다니엘 6장에 등장한다. 역사적 동일시는 고레스 휘하 총독 또는 문학적/왕명 전승 등으로 논의된다.' },
   { name: '캄비세스 2세', start: 530, end: 522, rating: 'persia', empire: '바사', reign: '8년', books: '역사 자료', event: '고레스의 후계자. 성경 본문에 뚜렷이 이름이 나오지는 않지만 귀환기 바사 제국 배경에 해당한다.' },
   { name: '스메르디스/바르디야', start: 522, end: 522, rating: 'persia', empire: '바사', reign: '수개월', books: '역사 자료', event: '바사 왕위 찬탈 또는 단기 통치자로 전해진다. 다리오 1세 즉위 직전의 과도기 왕이다.' },
   { name: '다리오 1세', start: 522, end: 486, rating: 'persia', empire: '바사', reign: '36년', books: '에스라, 학개, 스가랴', event: '성전 재건 재개와 완공을 확인한 바사 왕. 귀환 공동체 재건의 핵심 배경이다(스 5~6장).' },
@@ -309,7 +309,7 @@ renderMinistryLines(judahProphetsPriests, document.getElementById('judah-lane'),
 
 renderEraLane(exileEvents, document.getElementById('exile-lane'), exileRange);
 renderMinistryLines(exileProphetsPriests, document.getElementById('exile-lane'), exileRange, 112, 6);
-renderLane(foreignKings, document.getElementById('exile-lane'), exileRange, false, 4, 318);
+renderLane(foreignKings, document.getElementById('exile-lane'), exileRange, false, 5, 300);
 setZoom(zoomInput.value);
 
 
