@@ -7,6 +7,9 @@
   --good: #2fb46d;
   --bad: #d16b6b;
   --worst: #9e1b1b;
+  --babylon: #d8a13a;
+  --persia: #3aa6a0;
+  --uncertain: #9f8bed;
 }
 
 * {
@@ -71,6 +74,18 @@ body {
   background: var(--worst);
 }
 
+.babylon {
+  background: var(--babylon);
+}
+
+.persia {
+  background: var(--persia);
+}
+
+.uncertain {
+  background: var(--uncertain);
+}
+
 .timeline-wrap {
   width: min(1400px, 94vw);
   margin: 1rem auto 2.2rem;
@@ -81,7 +96,7 @@ body {
 .axis,
 .lane {
   position: relative;
-  min-width: 1280px;
+  min-width: 1680px;
 }
 
 .axis {
@@ -136,6 +151,10 @@ body {
   );
 }
 
+.foreign-lane {
+  height: 230px;
+}
+
 .bar {
   position: absolute;
   top: 24px;
@@ -161,6 +180,19 @@ body {
 
 .bar[data-rating='worst'] {
   background: color-mix(in srgb, var(--worst), transparent 22%);
+}
+
+.bar[data-rating='babylon'] {
+  background: color-mix(in srgb, var(--babylon), transparent 24%);
+}
+
+.bar[data-rating='persia'] {
+  background: color-mix(in srgb, var(--persia), transparent 25%);
+}
+
+.bar[data-rating='uncertain'] {
+  background: color-mix(in srgb, var(--uncertain), transparent 22%);
+  border-style: dashed;
 }
 
 .bar:hover,
