@@ -21,7 +21,7 @@ const earlyProphetsPriests = [
   { name: '여호수아', start: 1406, end: 1375, role: 'prophet', period: 'BCE 약 1406~1375', event: '모세 이후 가나안 정착을 이끈 지도자.' },
   { name: '드보라', start: 1209, end: 1169, role: 'prophet', period: 'BCE 약 1209~1169', event: '사사이자 여선지자. 바락과 함께 가나안 왕 야빈을 물리침.' },
   { name: '엘리', start: 1120, end: 1080, role: 'priest', period: 'BCE 약 1120~1080', event: '실로의 제사장. 사무엘의 어린 시절 배경.' },
-  { name: '사무엘', start: 1080, end: 1015, role: 'prophet', period: 'BCE 약 1080~1015', event: '마지막 사사이자 선지자. 사울과 다윗에게 기름 부음.' }
+  { name: '사무엘', start: 1080, end: 1015, role: 'prophet', period: 'BCE 약 1080~1015', event: '마지막 사사이자 선지자. 왕정 전환기에 이스라엘을 이끌고 사울과 다윗에게 기름 부음.' }
 ];
 
 const earlyJudges = [
@@ -30,8 +30,7 @@ const earlyJudges = [
   { name: '바락', start: 1209, end: 1169, role: 'judge', period: 'BCE 약 1209~1169', event: '야빈과 시스라를 물리친 사사 시대의 대표적 승리.' },
   { name: '기드온', start: 1162, end: 1122, role: 'judge', period: 'BCE 약 1162~1122', event: '미디안 압제에서 이스라엘을 구원한 사사.' },
   { name: '입다', start: 1087, end: 1081, role: 'judge', period: 'BCE 약 1087~1081', event: '암몬과의 전쟁에서 활약한 길르앗 출신 사사.' },
-  { name: '삼손', start: 1085, end: 1065, role: 'judge', period: 'BCE 약 1085~1065', event: '블레셋 압제기에 활동한 단 지파 사사.' },
-  { name: '사무엘', start: 1080, end: 1050, role: 'judge', period: 'BCE 약 1080~1050', event: '왕정 이전 마지막 사사. 사울 즉위까지 이스라엘을 이끎.' }
+  { name: '삼손', start: 1085, end: 1065, role: 'judge', period: 'BCE 약 1085~1065', event: '블레셋 압제기에 활동한 단 지파 사사.' }
 ];
 
 const unitedKings = [
@@ -41,7 +40,6 @@ const unitedKings = [
 ];
 
 const unitedProphetsPriests = [
-  { name: '사무엘', start: 1050, end: 1015, role: 'prophet', period: 'BCE 약 1080~1015', event: '사울을 세우고 책망했으며, 이후 다윗에게 기름 부음.' },
   { name: '갓', start: 1010, end: 970, role: 'prophet', period: 'BCE 약 1010~970', event: '다윗 곁에서 활동한 선견자(삼상 22장, 삼하 24장).' },
   { name: '나단', start: 1005, end: 970, role: 'prophet', period: 'BCE 약 1005~970', event: '다윗 언약을 전하고 밧세바 사건을 책망한 선지자.' },
   { name: '사독', start: 1000, end: 960, role: 'priest', period: 'BCE 약 1000~960', event: '다윗·솔로몬 시대의 제사장. 솔로몬 즉위에 핵심 역할.' },
@@ -149,7 +147,7 @@ const foreignKings = [
   { name: '느부갓네살 2세', start: 605, end: 562, rating: 'babylon', empire: '신바벨론', reign: '43년', books: '에스겔, 다니엘, 에스라', event: '예루살렘 포위와 포로 사건의 중심 왕. 다니엘과 세 친구가 활동한 바벨론 왕(단 1~4장).' },
   { name: '에윌므로닥', start: 562, end: 560, rating: 'babylon', empire: '신바벨론', reign: '2년', books: '열왕기하, 예레미야', event: '여호야긴을 옥에서 풀어 높인 왕. 포로기 후반 배경을 잇는 바벨론 왕(왕하 25장, 렘 52장).' },
   { name: '네리글리살', start: 560, end: 556, rating: 'babylon', empire: '신바벨론', reign: '4년', books: '역사 자료', event: '성경에는 왕명으로 직접 등장하지 않지만 느부갓네살 이후 바벨론 왕위 계승 흐름에 포함된다.' },
-  { name: '라바시마르둑', start: 556, end: 556, rating: 'babylon', empire: '신바벨론', reign: '수개월', books: '역사 자료', row: 4, event: '짧게 통치한 바벨론 왕. 포로기 바벨론 왕조 말기의 과도기 인물이다.' },
+  { name: '라바시마르둑', start: 556, end: 556, rating: 'babylon', empire: '신바벨론', reign: '수개월', books: '역사 자료', row: 1, event: '짧게 통치한 바벨론 왕. 포로기 바벨론 왕조 말기의 과도기 인물이다.' },
   { name: '나보니두스', start: 556, end: 539, rating: 'babylon', empire: '신바벨론', reign: '17년', books: '역사 자료, 다니엘 배경', event: '바벨론의 마지막 왕. 그의 아들 벨사살이 바벨론에서 왕권을 대행한 것으로 설명된다.' },
   { name: '벨사살', start: 553, end: 539, rating: 'babylon', empire: '신바벨론', reign: '공동/섭정 통치', books: '다니엘', event: '벽에 쓰인 글 사건과 바벨론 함락 밤의 왕으로 등장한다(단 5장).' },
   { name: '고레스 2세', start: 559, end: 530, rating: 'persia', empire: '바사', reign: '29년(바사), BCE 539부터 바벨론 통치', books: '다니엘, 에스라, 역대하', row: 3, event: '바사 왕으로 바벨론을 정복하고 유다 귀환과 성전 재건 칙령을 내린 왕(스 1장).' },
