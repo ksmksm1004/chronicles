@@ -15,6 +15,10 @@
   --persia: #3aa6a0;
   --uncertain: #9f8bed;
   --milestone: #f1e38b;
+  --gospel: #7bdff2;
+  --acts: #f2a65a;
+  --letter: #c4f06f;
+  --apostle: #f4a7c5;
 }
 * { box-sizing: border-box; }
 body {
@@ -27,6 +31,34 @@ body {
 .hero { padding: 2rem 1.2rem 1rem; max-width: 1200px; margin: 0 auto; }
 .hero h1 { margin: 0 0 0.8rem; font-size: clamp(1.5rem, 2vw, 2.2rem); }
 .hero p { margin: 0; max-width: 90ch; line-height: 1.6; color: var(--muted); }
+.page-tabs {
+  display: inline-flex;
+  gap: .35rem;
+  padding: .3rem;
+  margin-bottom: 1.2rem;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;
+  background: rgba(255,255,255,.05);
+}
+.page-tab {
+  appearance: none;
+  border: 0;
+  border-radius: 7px;
+  padding: .65rem .95rem;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 800;
+  cursor: pointer;
+}
+.page-tab.active {
+  background: rgba(255,255,255,.14);
+  color: var(--ink);
+  box-shadow: 0 8px 20px rgba(0,0,0,.18);
+}
+.page-intro,
+.timeline-page { display: none; }
+.page-intro.active,
+.timeline-page.active { display: block; }
 .legend { margin-top: .9rem; display:flex; gap:1rem; flex-wrap:wrap; font-size:.92rem; }
 .legend span { display:inline-flex; align-items:center; gap:.4rem; }
 .dot { width:.85rem; aspect-ratio:1; border-radius:50%; display:inline-block; }
@@ -34,12 +66,17 @@ body {
 .babylon { background: var(--babylon); }
 .persia { background: var(--persia); }
 .uncertain { background: var(--uncertain); }
+.gospel-dot-sample { background: var(--gospel); }
+.acts-dot-sample { background: var(--acts); }
+.letter-dot-sample { background: var(--letter); }
 .line-sample { width:1.8rem; height:2px; display:inline-block; position:relative; top:-1px; }
 .line-sample.prophet { background:var(--prophet); }
 .line-sample.priest { background:var(--priest); }
 .line-sample.judge { background:var(--judge); }
 .line-sample.leader { background:var(--leader); }
 .line-sample.milestone-sample { background:var(--milestone); }
+.line-sample.journey { background:var(--acts); height:4px; border-radius:999px; }
+.line-sample.apostle { background:var(--apostle); }
 .controls { width:min(1400px,94vw); margin: .2rem auto .8rem; display:flex; align-items:center; gap:.75rem; color:var(--muted); }
 .controls input { width: 220px; }
 .timeline-wrap { width:min(1400px,94vw); margin:0 auto 2.2rem; overflow-y:visible; padding-bottom:1rem; }
@@ -55,6 +92,12 @@ body {
 .primeval .section-scroll > .lane { min-width: calc(1700px * var(--early-zoom, 1)); }
 .exile .section-scroll > .axis,
 .exile .section-scroll > .lane { min-width: calc(1680px * var(--exile-zoom, 1)); }
+.gospel .section-scroll > .axis,
+.gospel .section-scroll > .gospel-lane { min-width: calc(2300px * var(--gospel-zoom, 1.8)); }
+.acts .section-scroll > .axis,
+.acts .section-scroll > .lane { min-width: calc(1900px * var(--acts-zoom, 1.8)); }
+.epistles .section-scroll > .axis,
+.epistles .section-scroll > .lane { min-width: calc(2100px * var(--epistles-zoom, 1.8)); }
 
 .section-scroll[data-sync-group="divided"] > .axis,
 .section-scroll[data-sync-group="divided"] > .lane,
@@ -63,6 +106,8 @@ body {
 .united .lane { height:150px; }
 .overview-lane { height:300px; }
 .exile .overview-lane { height:560px; }
+.nt-lane { height: 520px; }
+.epistles-lane { height: 620px; }
 .split-marker { height: 44px; margin-top: .3rem; }
 .split-marker::before, .split-marker::after { content:''; position:absolute; top: 20px; width: 2px; height: 22px; background:#ffde91; }
 .split-marker::before { left: 0; transform: rotate(24deg); transform-origin: top; }
@@ -146,6 +191,91 @@ body {
   text-align:center;
   text-shadow:0 1px 4px rgba(0,0,0,.9);
   white-space:normal;
+}
+.gospel-lane {
+  position: relative;
+  height: 300px;
+  border-radius: 12px;
+  background-image:
+    linear-gradient(180deg, transparent 58px, rgba(255,255,255,.08) 59px, transparent 60px),
+    linear-gradient(180deg, transparent 118px, rgba(255,255,255,.08) 119px, transparent 120px),
+    linear-gradient(180deg, transparent 178px, rgba(255,255,255,.08) 179px, transparent 180px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.04) 1px, transparent 1px, transparent 90px);
+}
+.gospel-row-label {
+  position: absolute;
+  left: 0;
+  width: 4.2rem;
+  padding-top: .2rem;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 800;
+  text-align: left;
+  pointer-events: none;
+  z-index: 2;
+  text-shadow: 0 1px 4px rgba(0,0,0,.85);
+}
+.gospel-event-dot,
+.nt-event-dot,
+.letter-dot {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 2px solid rgba(255,255,255,.72);
+  border-radius: 50%;
+  background: var(--gospel);
+  color: transparent;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 4px rgba(123,223,242,.1), 0 0 14px rgba(123,223,242,.28);
+  z-index: 4;
+}
+.gospel-event-dot:hover,
+.gospel-event-dot:focus-visible,
+.nt-event-dot:hover,
+.nt-event-dot:focus-visible,
+.letter-dot:hover,
+.letter-dot:focus-visible {
+  transform: translate(-50%, -50%) scale(1.35);
+  z-index: 12;
+}
+.gospel-event-dot.major {
+  width: 18px;
+  height: 18px;
+  background: color-mix(in srgb, var(--milestone), var(--gospel) 35%);
+}
+.nt-event-dot {
+  background: var(--acts);
+  box-shadow: 0 0 0 4px rgba(242,166,90,.1), 0 0 14px rgba(242,166,90,.28);
+}
+.letter-dot {
+  background: var(--letter);
+  box-shadow: 0 0 0 4px rgba(196,240,111,.1), 0 0 14px rgba(196,240,111,.28);
+}
+.journey-bar {
+  position: absolute;
+  height: 34px;
+  border: 1px solid rgba(255,255,255,.4);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--acts), transparent 22%);
+  color: var(--ink);
+  font-size: .74rem;
+  font-weight: 800;
+  padding: .28rem .45rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.journey-bar[data-kind='apostle'] {
+  background: color-mix(in srgb, var(--apostle), transparent 28%);
+}
+.journey-bar:hover,
+.journey-bar:focus-visible {
+  transform: translateY(-3px) scale(1.015);
+  box-shadow: 0 12px 22px rgba(0,0,0,.28);
+  z-index: 11;
 }
 .milestone:hover,
 .milestone:focus-visible {
