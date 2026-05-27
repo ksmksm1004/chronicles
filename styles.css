@@ -14,6 +14,7 @@
   --babylon: #d8a13a;
   --persia: #3aa6a0;
   --uncertain: #9f8bed;
+  --milestone: #f1e38b;
 }
 * { box-sizing: border-box; }
 body {
@@ -38,6 +39,7 @@ body {
 .line-sample.priest { background:var(--priest); }
 .line-sample.judge { background:var(--judge); }
 .line-sample.leader { background:var(--leader); }
+.line-sample.milestone-sample { background:var(--milestone); }
 .controls { width:min(1400px,94vw); margin: .2rem auto .8rem; display:flex; align-items:center; gap:.75rem; color:var(--muted); }
 .controls input { width: 220px; }
 .timeline-wrap { width:min(1400px,94vw); margin:0 auto 2.2rem; overflow-y:visible; padding-bottom:1rem; }
@@ -98,6 +100,56 @@ body {
   transform: translateY(-3px) scale(1.015);
   box-shadow: 0 12px 22px rgba(0,0,0,.28);
   z-index:9;
+}
+.milestone {
+  position:absolute;
+  width:18px;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:var(--milestone);
+  cursor:pointer;
+  transform:translateX(-50%);
+  z-index:5;
+}
+.milestone::before {
+  content:'';
+  position:absolute;
+  top:0;
+  bottom:0;
+  left:50%;
+  width:2px;
+  transform:translateX(-50%);
+  background:color-mix(in srgb, var(--milestone), transparent 22%);
+  box-shadow:0 0 10px color-mix(in srgb, var(--milestone), transparent 60%);
+}
+.milestone::after {
+  content:'';
+  position:absolute;
+  top:0;
+  left:50%;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  transform:translate(-50%, -1px);
+  background:var(--milestone);
+}
+.milestone span {
+  position:absolute;
+  left:50%;
+  max-width:6.5rem;
+  transform:translateX(-50%);
+  color:var(--ink);
+  font-size:.68rem;
+  font-weight:800;
+  line-height:1.15;
+  text-align:center;
+  text-shadow:0 1px 4px rgba(0,0,0,.9);
+  white-space:normal;
+}
+.milestone:hover,
+.milestone:focus-visible {
+  z-index:11;
 }
 .ministry-line {
   position:absolute;

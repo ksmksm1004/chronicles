@@ -119,11 +119,19 @@ const judahProphetsPriests = [
 ];
 
 const exileEvents = [
-  { name: '바벨론 포로', start: 586, end: 539, type: 'era', period: 'BCE 586~539', event: '예루살렘 함락 이후 바벨론 포로기.' },
-  { name: '귀환 시작', start: 539, end: 516, type: 'era', period: 'BCE 539~516', event: '고레스 칙령 이후 귀환과 제2성전 재건.' },
-  { name: '에스더 사건', start: 483, end: 473, type: 'era', period: 'BCE 약 483~473', event: '페르시아 궁정에서 유다 백성이 보존된 사건.' },
-  { name: '성벽 재건', start: 458, end: 445, type: 'era', period: 'BCE 458~445', event: '에스라의 율법 개혁과 느헤미야의 성벽 재건.' },
-  { name: '구약 말기', start: 445, end: 430, type: 'era', period: 'BCE 약 445~430', event: '말라기 전후로 구약 예언 전통이 마무리되는 시기.' }
+  { name: '바벨론 포로', start: 586, end: 539, type: 'era', period: 'BCE 586~539', row: 0, event: '예루살렘 함락 이후 바벨론 포로기.' },
+  { name: '귀환 시작', start: 539, end: 536, type: 'era', period: 'BCE 539~536', row: 1, event: '고레스 칙령 이후 스룹바벨을 중심으로 첫 귀환이 시작되고 제단 회복과 성전 기초 준비가 이어진 시기.' },
+  { name: '성전 재건', start: 536, end: 516, type: 'era', period: 'BCE 536~516', row: 0, event: '제2성전 재건의 전체 흐름. 기초가 놓인 뒤 방해와 중단을 거쳐 다리오 1세 때 완공된다.' },
+  { name: '공사 방해·중단', start: 536, end: 520, type: 'era', period: 'BCE 약 536~520', row: 1, event: '주변 민족의 방해와 바사 행정 압박으로 성전 공사가 장기간 지연·중단된 시기(스 4장).' },
+  { name: '에스더 사건', start: 483, end: 473, type: 'era', period: 'BCE 약 483~473', row: 0, event: '페르시아 궁정에서 유다 백성이 보존된 사건.' },
+  { name: '성벽 재건', start: 458, end: 445, type: 'era', period: 'BCE 458~445', row: 1, event: '에스라의 율법 개혁과 느헤미야의 성벽 재건.' },
+  { name: '구약 말기', start: 445, end: 430, type: 'era', period: 'BCE 약 445~430', row: 0, event: '말라기 전후로 구약 예언 전통이 마무리되는 시기.' }
+];
+
+const exileMilestones = [
+  { name: '예루살렘 함락', year: 586, labelTop: 268, event: '바벨론이 예루살렘을 함락하고 성전을 파괴한 시점(왕하 25장).' },
+  { name: '고레스 칙령', year: 539, labelTop: 282, event: '고레스가 바벨론을 정복한 뒤 유다 귀환과 성전 재건을 허락한 칙령의 시점(스 1장).' },
+  { name: '제2성전 완공', year: 516, labelTop: 268, event: '다리오 1세 제6년에 제2성전이 완공된 시점(스 6장).' }
 ];
 
 const exileProphetsPriests = [
@@ -193,7 +201,9 @@ function showTooltip(event, item) {
     leader: '주요 인물'
   };
   const roleLabel = roleLabels[item.role] || '시대';
-  const detail = item.empire
+  const detail = item.year
+    ? `<span>구분: 일회적 사건</span><br><span>시점: BCE ${item.year}</span>`
+    : item.empire
     ? `<span>제국: ${item.empire}</span><br><span>재위: BCE ${item.start}~${item.end} (${item.reign})</span><br><span>등장/참고: ${item.books}</span>`
     : item.reign
     ? `<span>부친/가문: ${item.father}</span><br><span>재위: BCE ${item.start}~${item.end} (${item.reign})</span>`
@@ -244,11 +254,27 @@ function renderEraLane(data, laneEl, range) {
     bar.className = 'era-bar';
     bar.style.left = `${toPercent(start, range)}%`;
     bar.style.width = `${Math.max(1.2, toPercent(end, range) - toPercent(start, range))}%`;
-    bar.style.top = `${18 + (index % 2) * 46}px`;
+    bar.style.top = `${18 + ((item.row ?? index) % 2) * 46}px`;
     bar.innerText = item.name;
     bar.addEventListener('mousemove', (e) => showTooltip(e, item));
     bar.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
     laneEl.appendChild(bar);
+  });
+}
+
+function renderMilestones(data, laneEl, range) {
+  data.forEach((item, index) => {
+    const marker = document.createElement('button');
+    const year = clampYear(item.year, range);
+    marker.type = 'button';
+    marker.className = 'milestone';
+    marker.style.left = `${toPercent(year, range)}%`;
+    marker.style.top = '8px';
+    marker.style.height = '524px';
+    marker.innerHTML = `<span style="top:${item.labelTop ?? 250 + (index % 2) * 22}px">${item.name}</span>`;
+    marker.addEventListener('mousemove', (e) => showTooltip(e, item));
+    marker.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
+    laneEl.appendChild(marker);
   });
 }
 
@@ -323,6 +349,7 @@ renderLane(judahKings, document.getElementById('judah-lane'), judahRange);
 renderMinistryLines(judahProphetsPriests, document.getElementById('judah-lane'), judahRange, 172);
 
 renderEraLane(exileEvents, document.getElementById('exile-lane'), exileRange);
+renderMilestones(exileMilestones, document.getElementById('exile-lane'), exileRange);
 renderMinistryLines(exileProphetsPriests, document.getElementById('exile-lane'), exileRange, 112, 6);
 renderLane(foreignKings, document.getElementById('exile-lane'), exileRange, false, 5, 300);
 setZoom(zoomInput.value);
