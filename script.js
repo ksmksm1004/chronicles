@@ -4,8 +4,8 @@ const israelRange = { start: 931, end: 586, tick: 25 };
 const judahRange = { start: 931, end: 586, tick: 25 };
 const exileRange = { start: 605, end: 424, tick: 25 };
 const gospelRange = { start: 26, end: 33.5, tick: 1, era: 'CE' };
-const actsRange = { start: 30, end: 67, tick: 5, era: 'CE' };
-const epistlesRange = { start: 45, end: 100, tick: 5, era: 'CE' };
+const actsRange = { start: 30, end: 70, tick: 5, era: 'CE' };
+const epistlesRange = { start: 30, end: 100, tick: 5, era: 'CE' };
 
 const earlyEvents = [
   { name: '아브라함', start: 2166, end: 1991, type: 'era', period: 'BCE 약 2166~1991', event: '족장 시대의 시작. 부르심과 언약(창 12~25장).' },
@@ -308,10 +308,10 @@ const apostleLines = [
 ];
 
 const ntHistoricalEvents = [
-  { name: '글라우디오 추방령', year: 49, refs: '행 18:2, 수에토니우스', event: '유대인들이 로마에서 추방되어 아굴라와 브리스길라가 고린도에 오게 된 배경.', row: 6 },
-  { name: '네로 박해', year: 64, refs: '타키투스, 교회사 전승', event: '로마 대화재 이후 그리스도인 박해가 일어나 베드로와 바울 순교 전승의 배경이 된다.', row: 6, major: true },
-  { name: '예루살렘 성전 파괴', year: 70, refs: '요세푸스, 공관복음 예언 배경', event: '로마 장군 티투스가 예루살렘과 성전을 파괴한다.', row: 6, major: true },
-  { name: '도미티아누스 시대', start: 81, end: 96, kind: 'apostle', period: 'CE 81~96', event: '소아시아 교회 압박과 요한계시록 저작 배경으로 자주 논의되는 황제 시대.', row: 6 }
+  { name: '글라우디오 추방령', year: 49, refs: '행 18:2, 수에토니우스', event: '유대인들이 로마에서 추방되어 아굴라와 브리스길라가 고린도에 오게 된 배경.', row: 0 },
+  { name: '네로 박해', year: 64, refs: '타키투스, 교회사 전승', event: '로마 대화재 이후 그리스도인 박해가 일어나 베드로와 바울 순교 전승의 배경이 된다.', row: 1, major: true },
+  { name: '예루살렘 성전 파괴', year: 70, refs: '요세푸스, 공관복음 예언 배경', event: '로마 장군 티투스가 예루살렘과 성전을 파괴한다.', row: 2, major: true },
+  { name: '도미티아누스 시대', start: 81, end: 96, kind: 'apostle', period: 'CE 81~96', event: '소아시아 교회 압박과 요한계시록 저작 배경으로 자주 논의되는 황제 시대.', row: 3 }
 ];
 
 const tooltip = document.getElementById('tooltip');
@@ -487,7 +487,14 @@ function renderGospelLane(data, laneEl, range) {
     laneEl.appendChild(label);
   });
 
-  data.forEach((item) => {
+  const setEventHighlight = (eventId, isActive) => {
+    laneEl
+      .querySelectorAll(`.gospel-event-dot[data-event-id="${eventId}"]`)
+      .forEach((dot) => dot.classList.toggle('event-highlight', isActive));
+  };
+
+  data.forEach((item, eventIndex) => {
+    const eventId = `gospel-${eventIndex}`;
     item.books.forEach((book) => {
       const rowIndex = gospelBooks.indexOf(book);
       if (rowIndex < 0) return;
@@ -495,17 +502,27 @@ function renderGospelLane(data, laneEl, range) {
       const dot = document.createElement('button');
       dot.type = 'button';
       dot.className = `gospel-event-dot${item.major ? ' major' : ''}`;
+      dot.dataset.eventId = eventId;
       dot.style.left = `${toPercent(clampYear(item.year, range), range)}%`;
       dot.style.top = `${rowTop + rowIndex * rowGap}px`;
       dot.setAttribute('aria-label', `${item.name} - ${book}`);
+      dot.addEventListener('mouseenter', () => setEventHighlight(eventId, true));
+      dot.addEventListener('focus', () => setEventHighlight(eventId, true));
       dot.addEventListener('mousemove', (e) => showTooltip(e, item));
-      dot.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
+      dot.addEventListener('mouseleave', () => {
+        setEventHighlight(eventId, false);
+        tooltip.classList.remove('show');
+      });
+      dot.addEventListener('blur', () => {
+        setEventHighlight(eventId, false);
+        tooltip.classList.remove('show');
+      });
       laneEl.appendChild(dot);
     });
   });
 }
 
-function renderNtEvents(data, laneEl, range, topBase = 74, rowGap = 48, className = 'nt-event-dot') {
+function renderNtEvents(data, laneEl, range, topBase = 74, rowGap = 48, className = 'nt-event-dot', showLabels = false) {
   data.forEach((item, index) => {
     if (!item.year) return;
 
@@ -514,6 +531,9 @@ function renderNtEvents(data, laneEl, range, topBase = 74, rowGap = 48, classNam
     dot.className = `${className}${item.major ? ' major' : ''}`;
     dot.style.left = `${toPercent(clampYear(item.year, range), range)}%`;
     dot.style.top = `${topBase + (item.row ?? index % 6) * rowGap}px`;
+    if (showLabels) {
+      dot.innerHTML = `<span class="event-label">${item.name}</span>`;
+    }
     dot.setAttribute('aria-label', item.name);
     dot.addEventListener('mousemove', (e) => showTooltip(e, item));
     dot.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
@@ -601,12 +621,12 @@ renderMinistryLines(exileProphetsPriests, document.getElementById('exile-lane'),
 renderLane(foreignKings, document.getElementById('exile-lane'), exileRange, false, 5, 300);
 
 renderGospelLane(gospelEvents, document.getElementById('gospel-lane'), gospelRange);
-renderNtEvents(actsEvents, document.getElementById('acts-lane'), actsRange, 80, 54);
-renderJourneyBars(actsEvents, document.getElementById('acts-lane'), actsRange, 250, 42);
-renderNtEvents(epistleEvents, document.getElementById('epistles-lane'), epistlesRange, 80, 48, 'letter-dot');
-renderNtEvents(ntHistoricalEvents, document.getElementById('epistles-lane'), epistlesRange, 420, 34, 'nt-event-dot');
-renderJourneyBars(apostleLines, document.getElementById('epistles-lane'), epistlesRange, 300, 34);
-renderJourneyBars(ntHistoricalEvents, document.getElementById('epistles-lane'), epistlesRange, 300, 34);
+renderNtEvents(actsEvents, document.getElementById('acts-lane'), actsRange, 76, 58, 'nt-event-dot', true);
+renderJourneyBars(actsEvents, document.getElementById('acts-lane'), actsRange, 400, 38);
+renderNtEvents(epistleEvents, document.getElementById('epistles-lane'), epistlesRange, 72, 50, 'letter-dot', true);
+renderNtEvents(ntHistoricalEvents, document.getElementById('epistles-lane'), epistlesRange, 510, 44, 'nt-event-dot', true);
+renderJourneyBars(apostleLines, document.getElementById('epistles-lane'), epistlesRange, 350, 34);
+renderJourneyBars(ntHistoricalEvents, document.getElementById('epistles-lane'), epistlesRange, 350, 34);
 setZoom(zoomInput.value);
 
 

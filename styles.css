@@ -84,7 +84,11 @@ body {
 .axis, .lane, .split-marker { position:relative; }
 .axis { height:3.2rem; border-bottom:1px solid var(--grid); margin-bottom:.7rem; }
 .tick { position:absolute; transform:translateX(-50%); color:var(--muted); font-size:.8rem; }
+.tick:first-child { transform: translateX(0); }
+.tick:last-child { transform: translateX(-100%); }
 .tick::before { content:''; position:absolute; top:1.1rem; left:50%; width:1px; height:1.1rem; background:var(--grid); }
+.tick:first-child::before { left: 0; }
+.tick:last-child::before { left: 100%; }
 .lane-section { margin-top:1rem; background:linear-gradient(135deg, rgba(255,255,255,.03), rgba(255,255,255,.01)); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:1rem; }
 .united .section-scroll > .axis,
 .united .section-scroll > .lane { min-width: calc(1400px * var(--united-zoom, 1)); }
@@ -95,9 +99,9 @@ body {
 .gospel .section-scroll > .axis,
 .gospel .section-scroll > .gospel-lane { min-width: calc(2300px * var(--gospel-zoom, 1.8)); }
 .acts .section-scroll > .axis,
-.acts .section-scroll > .lane { min-width: calc(1900px * var(--acts-zoom, 1.8)); }
+.acts .section-scroll > .lane { min-width: calc(2000px * var(--acts-zoom, 1.8)); }
 .epistles .section-scroll > .axis,
-.epistles .section-scroll > .lane { min-width: calc(2100px * var(--epistles-zoom, 1.8)); }
+.epistles .section-scroll > .lane { min-width: calc(2400px * var(--epistles-zoom, 1.8)); }
 
 .section-scroll[data-sync-group="divided"] > .axis,
 .section-scroll[data-sync-group="divided"] > .lane,
@@ -106,8 +110,8 @@ body {
 .united .lane { height:150px; }
 .overview-lane { height:300px; }
 .exile .overview-lane { height:560px; }
-.nt-lane { height: 520px; }
-.epistles-lane { height: 620px; }
+.nt-lane { height: 660px; }
+.epistles-lane { height: 760px; }
 .split-marker { height: 44px; margin-top: .3rem; }
 .split-marker::before, .split-marker::after { content:''; position:absolute; top: 20px; width: 2px; height: 22px; background:#ffde91; }
 .split-marker::before { left: 0; transform: rotate(24deg); transform-origin: top; }
@@ -233,6 +237,7 @@ body {
 }
 .gospel-event-dot:hover,
 .gospel-event-dot:focus-visible,
+.gospel-event-dot.event-highlight,
 .nt-event-dot:hover,
 .nt-event-dot:focus-visible,
 .letter-dot:hover,
@@ -245,6 +250,10 @@ body {
   height: 18px;
   background: color-mix(in srgb, var(--milestone), var(--gospel) 35%);
 }
+.gospel-event-dot.event-highlight {
+  border-color: #fff;
+  box-shadow: 0 0 0 8px rgba(241,227,139,.18), 0 0 28px rgba(241,227,139,.55);
+}
 .nt-event-dot {
   background: var(--acts);
   box-shadow: 0 0 0 4px rgba(242,166,90,.1), 0 0 14px rgba(242,166,90,.28);
@@ -252,6 +261,25 @@ body {
 .letter-dot {
   background: var(--letter);
   box-shadow: 0 0 0 4px rgba(196,240,111,.1), 0 0 14px rgba(196,240,111,.28);
+}
+.event-label {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  width: 6.2rem;
+  transform: translateX(-50%);
+  color: var(--ink);
+  font-size: .62rem;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
+  text-shadow: 0 1px 4px rgba(0,0,0,.9);
+  white-space: normal;
+  pointer-events: none;
+}
+.nt-event-dot.major .event-label,
+.letter-dot.major .event-label {
+  color: #fff7b2;
 }
 .journey-bar {
   position: absolute;
