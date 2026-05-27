@@ -479,6 +479,8 @@ function renderMinistryLines(data, laneEl, range, topBase = 72, rowCount = 4) {
 function renderGospelLane(data, laneEl, range) {
   const rowTop = 48;
   const rowGap = 60;
+  const labelGapPercent = 4.2;
+  const labelSlots = Array.from({ length: gospelBooks.length }, () => []);
   gospelBooks.forEach((book, index) => {
     const label = document.createElement('span');
     label.className = 'gospel-row-label';
@@ -489,12 +491,33 @@ function renderGospelLane(data, laneEl, range) {
 
   const setEventHighlight = (eventId, isActive) => {
     laneEl
-      .querySelectorAll(`.gospel-event-dot[data-event-id="${eventId}"]`)
-      .forEach((dot) => dot.classList.toggle('event-highlight', isActive));
+      .querySelectorAll(`[data-event-id="${eventId}"]`)
+      .forEach((eventPart) => eventPart.classList.toggle('event-highlight', isActive));
   };
 
   data.forEach((item, eventIndex) => {
     const eventId = `gospel-${eventIndex}`;
+    const eventPercent = toPercent(clampYear(item.year, range), range);
+    const eventRows = item.books
+      .map((book) => gospelBooks.indexOf(book))
+      .filter((rowIndex) => rowIndex >= 0);
+    const labelRow = Math.max(...eventRows);
+    let labelSlot = labelSlots[labelRow].findIndex((lastPercent) => eventPercent - lastPercent > labelGapPercent);
+
+    if (labelSlot < 0) {
+      labelSlot = labelSlots[labelRow].length;
+    }
+
+    labelSlots[labelRow][labelSlot] = eventPercent;
+
+    const eventLabel = document.createElement('span');
+    eventLabel.className = `gospel-event-label${item.major ? ' major' : ''}`;
+    eventLabel.dataset.eventId = eventId;
+    eventLabel.style.left = `${eventPercent}%`;
+    eventLabel.style.top = `${rowTop + labelRow * rowGap + 22 + labelSlot * 27}px`;
+    eventLabel.textContent = item.name;
+    laneEl.appendChild(eventLabel);
+
     item.books.forEach((book) => {
       const rowIndex = gospelBooks.indexOf(book);
       if (rowIndex < 0) return;
@@ -503,7 +526,7 @@ function renderGospelLane(data, laneEl, range) {
       dot.type = 'button';
       dot.className = `gospel-event-dot${item.major ? ' major' : ''}`;
       dot.dataset.eventId = eventId;
-      dot.style.left = `${toPercent(clampYear(item.year, range), range)}%`;
+      dot.style.left = `${eventPercent}%`;
       dot.style.top = `${rowTop + rowIndex * rowGap}px`;
       dot.setAttribute('aria-label', `${item.name} - ${book}`);
       dot.addEventListener('mouseenter', () => setEventHighlight(eventId, true));
