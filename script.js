@@ -226,14 +226,14 @@ const gospelEvents = [
   { name: '무화과나무와 성전 정화', year: 33.05, books: ['마태', '마가', '누가'], refs: '마 21:12-22, 막 11:12-26, 눅 19:45-48', event: '성전을 정화하시고 열매 없는 무화과나무를 심판 표지로 삼으신다.', phase: '고난주간' },
   { name: '종교 지도자 논쟁', year: 33.08, books: ['마태', '마가', '누가'], refs: '마 21:23-23:39, 막 11:27-12:44, 눅 20:1-21:4', event: '권위, 세금, 부활, 큰 계명, 외식에 대한 논쟁과 책망이 이어진다.', phase: '고난주간' },
   { name: '감람산 강화', year: 33.1, books: ['마태', '마가', '누가'], refs: '마 24~25장, 막 13장, 눅 21:5-36', event: '성전 파괴와 인자의 오심, 깨어 있음에 대해 가르치신다.', phase: '고난주간', major: true },
-  { name: '최후의 만찬', year: 33.18, books: ['마태', '마가', '누가', '요한'], refs: '마 26:17-30, 막 14:12-26, 눅 22:7-38, 요 13~17장', event: '새 언약의 식탁, 발 씻김, 보혜사 약속과 대제사장적 기도가 이어진다.', phase: '고난주간', major: true },
-  { name: '겟세마네 기도와 체포', year: 33.2, books: ['마태', '마가', '누가', '요한'], refs: '마 26:36-56, 막 14:32-52, 눅 22:39-53, 요 18:1-12', event: '겟세마네에서 기도하시고 유다의 배반으로 체포되신다.', phase: '고난주간', major: true },
+  { name: '최후의 만찬', year: 33.18, books: ['마태', '마가', '누가', '요한'], refs: '마 26:17-30, 막 14:12-26, 눅 22:7-38, 요 13~17장', event: '새 언약의 식탁, 발 씻김, 보혜사 약속과 대제사장적 기도가 이어진다.', phase: '고난주간', major: true, labelSlot: 1 },
+  { name: '겟세마네 기도와 체포', year: 33.2, books: ['마태', '마가', '누가', '요한'], refs: '마 26:36-56, 막 14:32-52, 눅 22:39-53, 요 18:1-12', event: '겟세마네에서 기도하시고 유다의 배반으로 체포되신다.', phase: '고난주간', major: true, labelSlot: 2 },
   { name: '재판과 베드로 부인', year: 33.22, books: ['마태', '마가', '누가', '요한'], refs: '마 26:57-27:31, 막 14:53-15:20, 눅 22:54-23:25, 요 18:13-19:16', event: '유대 지도자와 빌라도 앞에서 재판을 받으시고 베드로가 세 번 부인한다.', phase: '고난주간', major: true },
-  { name: '십자가와 죽으심', year: 33.25, books: ['마태', '마가', '누가', '요한'], refs: '마 27:32-56, 막 15:21-41, 눅 23:26-49, 요 19:17-37', event: '골고다에서 십자가에 못 박히시고 죽으신다.', phase: '고난주간', major: true },
-  { name: '장사', year: 33.28, books: ['마태', '마가', '누가', '요한'], refs: '마 27:57-61, 막 15:42-47, 눅 23:50-56, 요 19:38-42', event: '아리마대 요셉의 무덤에 장사되신다.', phase: '고난주간' },
-  { name: '부활', year: 33.31, books: ['마태', '마가', '누가', '요한'], refs: '마 28:1-10, 막 16:1-8, 눅 24:1-12, 요 20:1-18', event: '빈 무덤과 부활의 첫 증언이 선포된다.', phase: '부활 이후', major: true },
+  { name: '십자가와 죽으심', year: 33.25, books: ['마태', '마가', '누가', '요한'], refs: '마 27:32-56, 막 15:21-41, 눅 23:26-49, 요 19:17-37', event: '골고다에서 십자가에 못 박히시고 죽으신다.', phase: '고난주간', major: true, labelSlot: 3 },
+  { name: '장사', year: 33.28, books: ['마태', '마가', '누가', '요한'], refs: '마 27:57-61, 막 15:42-47, 눅 23:50-56, 요 19:38-42', event: '아리마대 요셉의 무덤에 장사되신다.', phase: '고난주간', labelSlot: 2, labelNudge: -1.15 },
+  { name: '부활', year: 33.31, books: ['마태', '마가', '누가', '요한'], refs: '마 28:1-10, 막 16:1-8, 눅 24:1-12, 요 20:1-18', event: '빈 무덤과 부활의 첫 증언이 선포된다.', phase: '부활 이후', major: true, labelSlot: 2, labelNudge: 1.15 },
   { name: '엠마오와 제자들에게 나타나심', year: 33.34, books: ['누가', '요한'], refs: '눅 24:13-49, 요 20:19-29', event: '부활하신 주께서 성경을 풀어주시고 제자들에게 평강을 선포하신다.', phase: '부활 이후' },
-  { name: '갈릴리 현현과 사명', year: 33.38, books: ['마태', '요한'], refs: '마 28:16-20, 요 21장', event: '대위임령과 베드로 회복 사건이 이어진다.', phase: '부활 이후', major: true },
+  { name: '갈릴리 현현과 사명', year: 33.38, books: ['마태', '요한'], refs: '마 28:16-20, 요 21장', event: '대위임령과 베드로 회복 사건이 이어진다.', phase: '부활 이후', major: true, labelSlot: 1 },
   { name: '승천', year: 33.42, books: ['마가', '누가'], refs: '막 16:19-20, 눅 24:50-53', event: '제자들을 축복하시고 하늘로 올려지신다.', phase: '부활 이후', major: true }
 ];
 
@@ -479,7 +479,7 @@ function renderMinistryLines(data, laneEl, range, topBase = 72, rowCount = 4) {
 function renderGospelLane(data, laneEl, range) {
   const rowTop = 48;
   const rowGap = 60;
-  const labelGapPercent = 4.2;
+  const labelGapPercent = 2.65;
   const labelSlots = Array.from({ length: gospelBooks.length }, () => []);
   gospelBooks.forEach((book, index) => {
     const label = document.createElement('span');
@@ -502,7 +502,9 @@ function renderGospelLane(data, laneEl, range) {
       .map((book) => gospelBooks.indexOf(book))
       .filter((rowIndex) => rowIndex >= 0);
     const labelRow = Math.max(...eventRows);
-    let labelSlot = labelSlots[labelRow].findIndex((lastPercent) => eventPercent - lastPercent > labelGapPercent);
+    let labelSlot = Number.isInteger(item.labelSlot)
+      ? item.labelSlot
+      : labelSlots[labelRow].findIndex((lastPercent) => eventPercent - lastPercent > labelGapPercent);
 
     if (labelSlot < 0) {
       labelSlot = labelSlots[labelRow].length;
@@ -513,7 +515,7 @@ function renderGospelLane(data, laneEl, range) {
     const eventLabel = document.createElement('span');
     eventLabel.className = `gospel-event-label${item.major ? ' major' : ''}`;
     eventLabel.dataset.eventId = eventId;
-    eventLabel.style.left = `${eventPercent}%`;
+    eventLabel.style.left = `${eventPercent + (item.labelNudge || 0)}%`;
     eventLabel.style.top = `${rowTop + labelRow * rowGap + 22 + labelSlot * 27}px`;
     eventLabel.textContent = item.name;
     laneEl.appendChild(eventLabel);
