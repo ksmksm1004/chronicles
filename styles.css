@@ -52,9 +52,7 @@ body {
 .primeval .section-scroll > .axis,
 .primeval .section-scroll > .lane { min-width: calc(1700px * var(--early-zoom, 1)); }
 .exile .section-scroll > .axis,
-.exile .section-scroll > .lane { min-width: calc(1400px * var(--exile-zoom, 1)); }
-.foreign-section .section-scroll > .axis,
-.foreign-section .section-scroll > .lane { min-width: calc(1680px * var(--foreign-zoom, 1)); }
+.exile .section-scroll > .lane { min-width: calc(1680px * var(--exile-zoom, 1)); }
 
 .section-scroll[data-sync-group="divided"] > .axis,
 .section-scroll[data-sync-group="divided"] > .lane,
@@ -62,7 +60,7 @@ body {
 .lane { height:280px; border-radius:12px; background-image:repeating-linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.04) 1px, transparent 1px, transparent 90px); }
 .united .lane { height:150px; }
 .overview-lane { height:300px; }
-.foreign-lane { height:230px; }
+.exile .overview-lane { height:540px; }
 .split-marker { height: 44px; margin-top: .3rem; }
 .split-marker::before, .split-marker::after { content:''; position:absolute; top: 20px; width: 2px; height: 22px; background:#ffde91; }
 .split-marker::before { left: 0; transform: rotate(24deg); transform-origin: top; }

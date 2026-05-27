@@ -2,8 +2,7 @@ const earlyRange = { start: 2166, end: 1050, tick: 100 };
 const unitedRange = { start: 1050, end: 931, tick: 10 };
 const israelRange = { start: 931, end: 586, tick: 25 };
 const judahRange = { start: 931, end: 586, tick: 25 };
-const exileRange = { start: 586, end: 430, tick: 25 };
-const foreignRange = { start: 605, end: 424, tick: 25 };
+const exileRange = { start: 605, end: 424, tick: 25 };
 
 const earlyEvents = [
   { name: '아브라함', start: 2166, end: 1991, type: 'era', period: 'BCE 약 2166~1991', event: '족장 시대의 시작. 부르심과 언약(창 12~25장).' },
@@ -164,16 +163,13 @@ const zoomTargets = {
   early: { cssVar: '--early-zoom', value: 1 },
   united: { cssVar: '--united-zoom', value: 1 },
   divided: { cssVar: '--divided-zoom', value: Number(zoomInput.value) },
-  exile: { cssVar: '--exile-zoom', value: 1 },
-  foreign: { cssVar: '--foreign-zoom', value: 1 }
+  exile: { cssVar: '--exile-zoom', value: 1 }
 };
 
 function toPercent(year, range) {
   const total = range.start - range.end;
   return ((range.start - year) / total) * 100;
 }
-
-function stackedRow(index, rowCount = 3) { return (index % rowCount) * 50 + 18; }
 
 function clampYear(year, range) {
   return Math.min(range.start, Math.max(range.end, year));
@@ -208,7 +204,7 @@ function showTooltip(event, item) {
   tooltip.classList.add('show');
 }
 
-function renderLane(data, laneEl, range, singleRow = false, rowCount = 3) {
+function renderLane(data, laneEl, range, singleRow = false, rowCount = 3, topBase = 18) {
   data.forEach((king, index) => {
     const bar = document.createElement('button');
     bar.type = 'button';
@@ -216,7 +212,7 @@ function renderLane(data, laneEl, range, singleRow = false, rowCount = 3) {
     bar.dataset.rating = king.rating;
     bar.style.left = `${toPercent(king.start, range)}%`;
     bar.style.width = `${Math.max(1.2, toPercent(king.end, range) - toPercent(king.start, range))}%`;
-    bar.style.top = `${singleRow ? 22 : stackedRow(king.row ?? index, rowCount)}px`;
+    bar.style.top = `${singleRow ? 22 : topBase + ((king.row ?? index) % rowCount) * 50}px`;
     bar.innerText = king.name;
     bar.addEventListener('mousemove', (e) => showTooltip(e, king));
     bar.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
@@ -297,7 +293,6 @@ addAxisTicks(document.getElementById('united-axis'), unitedRange);
 addAxisTicks(document.getElementById('israel-axis'), israelRange);
 addAxisTicks(document.getElementById('judah-axis'), judahRange);
 addAxisTicks(document.getElementById('exile-axis'), exileRange);
-addAxisTicks(document.getElementById('foreign-axis'), foreignRange);
 
 renderEraLane(earlyEvents, document.getElementById('early-lane'), earlyRange);
 renderMinistryLines(earlyProphetsPriests, document.getElementById('early-lane'), earlyRange, 116);
@@ -314,7 +309,7 @@ renderMinistryLines(judahProphetsPriests, document.getElementById('judah-lane'),
 
 renderEraLane(exileEvents, document.getElementById('exile-lane'), exileRange);
 renderMinistryLines(exileProphetsPriests, document.getElementById('exile-lane'), exileRange, 112, 6);
-renderLane(foreignKings, document.getElementById('foreign-lane'), foreignRange, false, 4);
+renderLane(foreignKings, document.getElementById('exile-lane'), exileRange, false, 4, 318);
 setZoom(zoomInput.value);
 
 
