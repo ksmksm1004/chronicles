@@ -429,6 +429,8 @@ const timelinePages = Array.from(document.querySelectorAll('.timeline-page'));
 const splitLabel = document.getElementById('split-label');
 const syncScrollAreas = Array.from(document.querySelectorAll('.section-scroll[data-sync-group="divided"]'));
 const ntMap = document.getElementById('nt-map');
+const ntMapInfo = document.getElementById('nt-map-info');
+const ntMapEventList = document.getElementById('nt-map-event-list');
 const mapBindings = new Map();
 const timelineBindings = new Map();
 let activeMapId = null;
@@ -477,6 +479,40 @@ function getMapLocationNames(item) {
   return names.join(' → ');
 }
 
+function getMapItemYear(item) {
+  if (Number.isFinite(item.year)) return item.year;
+  if (Number.isFinite(item.start)) return item.start;
+  return 999;
+}
+
+function getMapItemPeriod(item) {
+  if (Number.isFinite(item.year)) return `CE 약 ${item.year}`;
+  if (Number.isFinite(item.start) && Number.isFinite(item.end)) return `CE 약 ${item.start}~${item.end}`;
+  return item.period || 'CE';
+}
+
+function getMapKindLabel(item) {
+  const geo = getNtGeo(item);
+  if (!geo) return '';
+  if (geo.uncertain || geo.kind === 'uncertain') return '추정/광역';
+  if (geo.kind === 'letter') return '서신 수신지';
+  if (geo.kind === 'journey') return '전도여행/항해';
+  return '사건';
+}
+
+function getMapInfoHtml(item) {
+  const mapLocations = getMapLocationNames(item);
+  const mapNote = getNtGeo(item)?.note;
+  const locationLine = mapLocations ? `위치: ${mapLocations}` : '';
+  const noteLine = mapNote ? ` · ${mapNote}` : '';
+  return `<strong>${item.name}</strong><span>${getMapItemPeriod(item)} · ${getMapKindLabel(item)}${locationLine ? `<br>${locationLine}${noteLine}` : noteLine}</span>`;
+}
+
+function updateMapInfo(item) {
+  if (!ntMapInfo || !item) return;
+  ntMapInfo.innerHTML = getMapInfoHtml(item);
+}
+
 function registerLinkedElement(store, id, element) {
   if (!id) return;
   if (!store.has(id)) store.set(id, []);
@@ -505,8 +541,14 @@ function wireLinkedHover(element, item) {
 
   registerLinkedElement(timelineBindings, id, element);
   element.dataset.mapId = id;
-  element.addEventListener('mouseenter', () => setLinkedFocus(id, true));
-  element.addEventListener('focus', () => setLinkedFocus(id, true));
+  element.addEventListener('mouseenter', () => {
+    setLinkedFocus(id, true);
+    updateMapInfo(item);
+  });
+  element.addEventListener('focus', () => {
+    setLinkedFocus(id, true);
+    updateMapInfo(item);
+  });
   element.addEventListener('mouseleave', () => setLinkedFocus(id, false));
   element.addEventListener('blur', () => setLinkedFocus(id, false));
 }
@@ -780,17 +822,16 @@ function renderNtMap() {
         'aria-label': item.name
       });
       registerLinkedElement(mapBindings, id, path);
-      path.addEventListener('mouseenter', () => setLinkedFocus(id, true));
-      path.addEventListener('focus', () => setLinkedFocus(id, true));
-      path.addEventListener('mousemove', (e) => showTooltip(e, item));
-      path.addEventListener('mouseleave', () => {
-        setLinkedFocus(id, false);
-        tooltip.classList.remove('show');
+      path.addEventListener('mouseenter', () => {
+        setLinkedFocus(id, true);
+        updateMapInfo(item);
       });
-      path.addEventListener('blur', () => {
-        setLinkedFocus(id, false);
-        tooltip.classList.remove('show');
+      path.addEventListener('focus', () => {
+        setLinkedFocus(id, true);
+        updateMapInfo(item);
       });
+      path.addEventListener('mouseleave', () => setLinkedFocus(id, false));
+      path.addEventListener('blur', () => setLinkedFocus(id, false));
       ntMap.appendChild(path);
     }
   });
@@ -818,19 +859,38 @@ function renderNtMap() {
       label.textContent = location.name;
       group.appendChild(label);
       registerLinkedElement(mapBindings, id, group);
-      group.addEventListener('mouseenter', () => setLinkedFocus(id, true));
-      group.addEventListener('focus', () => setLinkedFocus(id, true));
-      group.addEventListener('mousemove', (e) => showTooltip(e, item));
-      group.addEventListener('mouseleave', () => {
-        setLinkedFocus(id, false);
-        tooltip.classList.remove('show');
+      group.addEventListener('mouseenter', () => {
+        setLinkedFocus(id, true);
+        updateMapInfo(item);
       });
-      group.addEventListener('blur', () => {
-        setLinkedFocus(id, false);
-        tooltip.classList.remove('show');
+      group.addEventListener('focus', () => {
+        setLinkedFocus(id, true);
+        updateMapInfo(item);
       });
+      group.addEventListener('mouseleave', () => setLinkedFocus(id, false));
+      group.addEventListener('blur', () => setLinkedFocus(id, false));
       ntMap.appendChild(group);
     });
+  });
+}
+
+function renderNtMapEventList() {
+  if (!ntMapEventList) return;
+
+  const plottedItems = [...actsEvents, ...epistleEvents, ...ntHistoricalEvents]
+    .filter(getNtGeo)
+    .sort((a, b) => getMapItemYear(a) - getMapItemYear(b) || a.name.localeCompare(b.name, 'ko'));
+
+  plottedItems.forEach((item) => {
+    const geo = getNtGeo(item);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'nt-map-list-item';
+    button.dataset.kind = geo.uncertain ? 'uncertain' : geo.kind || 'acts';
+    button.innerHTML = `<time>${getMapItemPeriod(item)}</time><strong>${item.name}</strong><span>${getMapKindLabel(item)} · ${getMapLocationNames(item)}</span>`;
+    button.setAttribute('aria-label', item.name);
+    wireLinkedHover(button, item);
+    ntMapEventList.appendChild(button);
   });
 }
 
@@ -971,6 +1031,7 @@ renderLane(foreignKings, document.getElementById('exile-lane'), exileRange, fals
 
 renderGospelLane(gospelEvents, document.getElementById('gospel-lane'), gospelRange);
 renderNtMap();
+renderNtMapEventList();
 renderNtEvents(actsEvents, document.getElementById('acts-lane'), actsRange, 76, 58, 'nt-event-dot', true);
 renderJourneyBars(actsEvents, document.getElementById('acts-lane'), actsRange, 400, 38);
 renderNtEvents(epistleEvents, document.getElementById('epistles-lane'), epistlesRange, 72, 50, 'letter-dot', true);
