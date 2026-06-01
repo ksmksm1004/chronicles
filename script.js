@@ -314,12 +314,124 @@ const ntHistoricalEvents = [
   { name: '도미티아누스 시대', start: 81, end: 96, kind: 'apostle', period: 'CE 81~96', event: '소아시아 교회 압박과 요한계시록 저작 배경으로 자주 논의되는 황제 시대.', row: 3 }
 ];
 
+const ntMapImage = {
+  href: 'assets/paul-journeys-map-knecht.png',
+  source: 'https://commons.wikimedia.org/wiki/File:Map_missionary_journeys_stpaul_knecht.png'
+};
+
+const ntMapLocations = {
+  jerusalem: { name: '예루살렘', lat: 31.78, lng: 35.23 },
+  samaria: { name: '사마리아', lat: 32.28, lng: 35.2 },
+  gazaRoad: { name: '가사로 내려가는 길', lat: 31.5, lng: 34.55 },
+  damascus: { name: '다메섹', lat: 33.51, lng: 36.29 },
+  lydda: { name: '룻다', lat: 31.95, lng: 34.9 },
+  joppa: { name: '욥바', lat: 32.05, lng: 34.75 },
+  caesarea: { name: '가이사랴', lat: 32.5, lng: 34.89 },
+  antioch: { name: '수리아 안디옥', lat: 36.2, lng: 36.16 },
+  salamis: { name: '살라미', lat: 35.17, lng: 33.36 },
+  paphos: { name: '바보', lat: 34.77, lng: 32.42 },
+  pisidianAntioch: { name: '비시디아 안디옥', lat: 38.3, lng: 31.19 },
+  iconium: { name: '이고니온', lat: 37.87, lng: 32.49 },
+  lystra: { name: '루스드라', lat: 37.58, lng: 32.45 },
+  derbe: { name: '더베', lat: 37.35, lng: 33.26 },
+  troas: { name: '드로아', lat: 39.75, lng: 26.16 },
+  philippi: { name: '빌립보', lat: 41.01, lng: 24.28 },
+  thessalonica: { name: '데살로니가', lat: 40.64, lng: 22.94 },
+  berea: { name: '베뢰아', lat: 40.52, lng: 22.2 },
+  athens: { name: '아덴', lat: 37.98, lng: 23.73 },
+  corinth: { name: '고린도', lat: 37.94, lng: 22.93 },
+  ephesus: { name: '에베소', lat: 37.94, lng: 27.34 },
+  colossae: { name: '골로새', lat: 37.78, lng: 29.26 },
+  galatia: { name: '갈라디아', lat: 38.4, lng: 32.1 },
+  phrygia: { name: '브루기아', lat: 38.5, lng: 30.5 },
+  miletus: { name: '밀레도', lat: 37.53, lng: 27.28 },
+  sidon: { name: '시돈', lat: 33.56, lng: 35.37 },
+  crete: { name: '그레데', lat: 35.24, lng: 24.81 },
+  malta: { name: '멜리데', lat: 35.9, lng: 14.51 },
+  syracuse: { name: '수라구사', lat: 37.07, lng: 15.29 },
+  puteoli: { name: '보디올', lat: 40.82, lng: 14.12 },
+  rome: { name: '로마', lat: 41.9, lng: 12.5 },
+  nicopolis: { name: '니고볼리', lat: 39.0, lng: 20.74 },
+  asiaMinor: { name: '소아시아 교회들', lat: 38.5, lng: 29.2 },
+  pontusAsia: { name: '본도·갈라디아·갑바도기아·아시아·비두니아', lat: 39.6, lng: 32.7 },
+  sevenChurches: { name: '소아시아 일곱 교회', lat: 38.5, lng: 28.3 },
+  diaspora: { name: '디아스포라 유대 공동체', lat: 37.2, lng: 30.0 },
+  judea: { name: '유대/예루살렘권', lat: 31.78, lng: 35.23 },
+  spain: { name: '스페인 가능성', lat: 40.4, lng: -3.7 }
+};
+
+const ntGeo = {
+  '오순절 성령강림': { points: ['jerusalem'], kind: 'acts' },
+  '성전 미문 앉은뱅이 치유': { points: ['jerusalem'], kind: 'acts' },
+  '아나니아와 삽비라': { points: ['jerusalem'], kind: 'acts' },
+  '일곱 집사 세움': { points: ['jerusalem'], kind: 'acts' },
+  '스데반 순교': { points: ['jerusalem'], kind: 'acts' },
+  '사마리아 복음화': { points: ['samaria'], kind: 'acts' },
+  '에디오피아 내시': { points: ['gazaRoad'], kind: 'acts', note: '행 8장의 “예루살렘에서 가사로 내려가는 길”을 개략 표시' },
+  '사울 회심': { points: ['damascus'], kind: 'acts' },
+  '베드로의 룻다·욥바 사역': { points: ['lydda', 'joppa'], kind: 'acts' },
+  '고넬료 회심': { points: ['caesarea'], kind: 'acts' },
+  '안디옥 교회 성장': { points: ['antioch'], kind: 'acts' },
+  '야고보 순교와 베드로 투옥': { points: ['jerusalem'], kind: 'acts' },
+  '1차 전도여행': { route: ['antioch', 'salamis', 'paphos', 'pisidianAntioch', 'iconium', 'lystra', 'derbe', 'lystra', 'iconium', 'pisidianAntioch', 'paphos', 'antioch'], kind: 'journey' },
+  '예루살렘 공의회': { points: ['jerusalem'], kind: 'acts' },
+  '2차 전도여행': { route: ['antioch', 'galatia', 'troas', 'philippi', 'thessalonica', 'berea', 'athens', 'corinth', 'ephesus', 'caesarea', 'antioch'], kind: 'journey' },
+  '빌립보 감옥': { points: ['philippi'], kind: 'acts' },
+  '아덴 아레오바고 설교': { points: ['athens'], kind: 'acts' },
+  '고린도 사역': { points: ['corinth'], kind: 'acts' },
+  '3차 전도여행': { route: ['antioch', 'galatia', 'phrygia', 'ephesus', 'troas', 'philippi', 'corinth', 'troas', 'miletus', 'caesarea', 'jerusalem'], kind: 'journey' },
+  '에베소 두란노 서원': { points: ['ephesus'], kind: 'acts' },
+  '에베소 소동': { points: ['ephesus'], kind: 'acts' },
+  '드로아 유두고': { points: ['troas'], kind: 'acts' },
+  '밀레도 장로 고별': { points: ['miletus'], kind: 'acts' },
+  '예루살렘 체포': { points: ['jerusalem'], kind: 'acts' },
+  '가이사랴 구금': { points: ['caesarea'], kind: 'acts' },
+  '로마행 항해와 난파': { route: ['caesarea', 'sidon', 'crete', 'malta', 'syracuse', 'puteoli', 'rome'], kind: 'journey' },
+  '로마 1차 연금': { points: ['rome'], kind: 'acts' },
+  '바울 석방 후 사역 추정': { route: ['crete', 'ephesus', 'nicopolis', 'rome'], kind: 'journey', uncertain: true, note: '사도행전 이후 경로는 전승과 학계 논의가 갈리며, 스페인 가능성은 이 배경 지도 범위 밖이라 선으로 표시하지 않음' },
+  '야고보서': { points: ['diaspora'], kind: 'uncertain', note: '“흩어진 열두 지파” 수신 범위를 동지중해 디아스포라로 개략 표시' },
+  '갈라디아서': { route: ['pisidianAntioch', 'iconium', 'lystra', 'derbe'], kind: 'letter', note: '남갈라디아 교회 수신 가설 기준' },
+  '데살로니가전서': { points: ['thessalonica'], kind: 'letter' },
+  '데살로니가후서': { points: ['thessalonica'], kind: 'letter' },
+  '고린도전서': { points: ['corinth'], kind: 'letter' },
+  '고린도후서': { points: ['corinth'], kind: 'letter' },
+  '로마서': { points: ['rome'], kind: 'letter' },
+  '마가복음': { points: ['rome'], kind: 'uncertain', note: '전승상 로마 공동체 관련으로 자주 논의됨' },
+  '에베소서': { points: ['ephesus'], kind: 'letter' },
+  '골로새서': { points: ['colossae'], kind: 'letter' },
+  '빌레몬서': { points: ['colossae'], kind: 'letter' },
+  '빌립보서': { points: ['philippi'], kind: 'letter' },
+  '누가복음': { points: ['rome'], kind: 'uncertain', note: '수신자 데오빌로의 정확한 거주지는 불확실' },
+  '사도행전': { route: ['jerusalem', 'samaria', 'antioch', 'ephesus', 'corinth', 'caesarea', 'rome'], kind: 'uncertain', note: '책 전체의 지리적 진행 방향을 요약한 선' },
+  '마태복음': { points: ['antioch'], kind: 'uncertain', note: '수신 공동체는 유대-그리스도인권으로 논의되며 안디옥은 대표 가설' },
+  '디모데전서': { points: ['ephesus'], kind: 'letter' },
+  '디도서': { points: ['crete'], kind: 'letter' },
+  '베드로전서': { route: ['pontusAsia', 'galatia', 'ephesus'], kind: 'letter', note: '벧전 1:1의 본도·갈라디아·갑바도기아·아시아·비두니아를 광역으로 표시' },
+  '디모데후서': { points: ['ephesus'], kind: 'letter', note: '디모데의 사역지로 보이는 에베소권 기준' },
+  '베드로후서': { route: ['pontusAsia', 'galatia', 'ephesus'], kind: 'letter', note: '베드로전서 수신권과 이어지는 광역 교회로 표시' },
+  '히브리서': { points: ['judea'], kind: 'uncertain', note: '수신지는 불확실하며 유대-그리스도인권으로 개략 표시' },
+  '유다서': { points: ['judea'], kind: 'uncertain', note: '수신 공동체가 특정 도시로 고정되지 않음' },
+  '요한복음': { points: ['ephesus'], kind: 'uncertain', note: '후기 에베소 전승 기준' },
+  '요한일서': { points: ['asiaMinor'], kind: 'letter' },
+  '요한이서': { points: ['asiaMinor'], kind: 'letter' },
+  '요한삼서': { points: ['asiaMinor'], kind: 'letter' },
+  '요한계시록': { points: ['sevenChurches'], kind: 'letter', note: '에베소·서머나·버가모·두아디라·사데·빌라델비아·라오디게아 권역' },
+  '글라우디오 추방령': { points: ['rome'], kind: 'acts' },
+  '네로 박해': { points: ['rome'], kind: 'acts' },
+  '예루살렘 성전 파괴': { points: ['jerusalem'], kind: 'acts' },
+  '도미티아누스 시대': { points: ['asiaMinor'], kind: 'uncertain' }
+};
+
 const tooltip = document.getElementById('tooltip');
 const zoomInput = document.getElementById('zoom');
 const zoomLabel = document.getElementById('zoom-label');
 const timelinePages = Array.from(document.querySelectorAll('.timeline-page'));
 const splitLabel = document.getElementById('split-label');
 const syncScrollAreas = Array.from(document.querySelectorAll('.section-scroll[data-sync-group="divided"]'));
+const ntMap = document.getElementById('nt-map');
+const mapBindings = new Map();
+const timelineBindings = new Map();
+let activeMapId = null;
 const zoomTargets = {
   early: { cssVar: '--early-zoom', value: 1 },
   united: { cssVar: '--united-zoom', value: 1 },
@@ -346,6 +458,57 @@ function clampYear(year, range) {
   }
 
   return Math.max(range.start, Math.min(range.end, year));
+}
+
+function getNtGeo(item) {
+  return item?.name ? ntGeo[item.name] : null;
+}
+
+function getMapId(item) {
+  return getNtGeo(item) ? item.name : '';
+}
+
+function getMapLocationNames(item) {
+  const geo = getNtGeo(item);
+  if (!geo) return '';
+
+  const keys = geo.route || geo.points || [];
+  const names = [...new Set(keys.map((key) => ntMapLocations[key]?.name).filter(Boolean))];
+  return names.join(' → ');
+}
+
+function registerLinkedElement(store, id, element) {
+  if (!id) return;
+  if (!store.has(id)) store.set(id, []);
+  store.get(id).push(element);
+}
+
+function setLinkedFocus(id, isActive) {
+  if (!id) return;
+  activeMapId = isActive ? id : activeMapId === id ? null : activeMapId;
+
+  timelineBindings.forEach((elements, key) => {
+    elements.forEach((element) => element.classList.toggle('timeline-active', activeMapId === key));
+  });
+
+  mapBindings.forEach((elements, key) => {
+    elements.forEach((element) => {
+      element.classList.toggle('map-active', activeMapId === key);
+      element.classList.toggle('map-dim', Boolean(activeMapId) && activeMapId !== key);
+    });
+  });
+}
+
+function wireLinkedHover(element, item) {
+  const id = getMapId(item);
+  if (!id) return;
+
+  registerLinkedElement(timelineBindings, id, element);
+  element.dataset.mapId = id;
+  element.addEventListener('mouseenter', () => setLinkedFocus(id, true));
+  element.addEventListener('focus', () => setLinkedFocus(id, true));
+  element.addEventListener('mouseleave', () => setLinkedFocus(id, false));
+  element.addEventListener('blur', () => setLinkedFocus(id, false));
 }
 
 function addAxisTicks(axisEl, range) {
@@ -385,7 +548,12 @@ function showTooltip(event, item) {
     : item.reign
     ? `<span>부친/가문: ${item.father}</span><br><span>재위: BCE ${item.start}~${item.end} (${item.reign})</span>`
     : `<span>구분: ${roleLabel}</span><br><span>기간: ${item.period || `BCE 약 ${item.start}~${item.end}`}</span>`;
-  tooltip.innerHTML = `<strong>${item.name}</strong><br>${detail}<br><span>요약: ${item.event}</span>`;
+  const mapLocations = getMapLocationNames(item);
+  const mapNote = getNtGeo(item)?.note;
+  const mapDetail = mapLocations
+    ? `<br><span>지도 위치: ${mapLocations}</span>${mapNote ? `<br><span>위치 주석: ${mapNote}</span>` : ''}`
+    : '';
+  tooltip.innerHTML = `<strong>${item.name}</strong><br>${detail}${mapDetail}<br><span>요약: ${item.event}</span>`;
   tooltip.classList.add('show');
 
   const gap = 16;
@@ -547,6 +715,125 @@ function renderGospelLane(data, laneEl, range) {
   });
 }
 
+function createSvgElement(name, attrs = {}) {
+  const element = document.createElementNS('http://www.w3.org/2000/svg', name);
+  Object.entries(attrs).forEach(([key, value]) => element.setAttribute(key, value));
+  return element;
+}
+
+function projectMapPoint(location) {
+  const bounds = { west: 11.6, east: 40.4, north: 42.3, south: 29.6 };
+  const x = ((location.lng - bounds.west) / (bounds.east - bounds.west)) * 1378 + 28;
+  const y = ((bounds.north - location.lat) / (bounds.north - bounds.south)) * 815 + 24;
+  return { x, y };
+}
+
+function routePath(keys) {
+  return keys
+    .map((key, index) => {
+      const location = ntMapLocations[key];
+      if (!location) return '';
+      const { x, y } = projectMapPoint(location);
+      return `${index === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+    })
+    .filter(Boolean)
+    .join(' ');
+}
+
+function renderMapBase(svg) {
+  svg.innerHTML = '';
+  svg.appendChild(createSvgElement('image', {
+    class: 'map-source-image',
+    href: ntMapImage.href,
+    x: 0,
+    y: 0,
+    width: 1434,
+    height: 864,
+    preserveAspectRatio: 'none'
+  }));
+
+  for (let x = 90; x <= 1340; x += 250) {
+    svg.appendChild(createSvgElement('line', { class: 'map-grid', x1: x, y1: 28, x2: x, y2: 830 }));
+  }
+
+  for (let y = 92; y <= 790; y += 170) {
+    svg.appendChild(createSvgElement('line', { class: 'map-grid', x1: 35, y1: y, x2: 1400, y2: y }));
+  }
+}
+
+function renderNtMap() {
+  if (!ntMap) return;
+
+  renderMapBase(ntMap);
+  const plottedItems = [...actsEvents, ...epistleEvents, ...ntHistoricalEvents].filter(getNtGeo);
+
+  plottedItems.forEach((item) => {
+    const geo = getNtGeo(item);
+    const id = getMapId(item);
+    const pathKeys = geo.route;
+
+    if (pathKeys) {
+      const path = createSvgElement('path', {
+        class: `map-route${geo.kind === 'letter' ? ' letter-route' : ''}`,
+        d: routePath(pathKeys),
+        tabindex: 0,
+        'aria-label': item.name
+      });
+      registerLinkedElement(mapBindings, id, path);
+      path.addEventListener('mouseenter', () => setLinkedFocus(id, true));
+      path.addEventListener('focus', () => setLinkedFocus(id, true));
+      path.addEventListener('mousemove', (e) => showTooltip(e, item));
+      path.addEventListener('mouseleave', () => {
+        setLinkedFocus(id, false);
+        tooltip.classList.remove('show');
+      });
+      path.addEventListener('blur', () => {
+        setLinkedFocus(id, false);
+        tooltip.classList.remove('show');
+      });
+      ntMap.appendChild(path);
+    }
+  });
+
+  plottedItems.forEach((item) => {
+    const geo = getNtGeo(item);
+    const id = getMapId(item);
+    const pointKeys = geo.points || geo.route || [];
+    const uniquePointKeys = [...new Set(pointKeys)];
+
+    uniquePointKeys.forEach((key, index) => {
+      const location = ntMapLocations[key];
+      if (!location) return;
+
+      const { x, y } = projectMapPoint(location);
+      const group = createSvgElement('g', {
+        class: 'map-point',
+        'data-kind': geo.uncertain ? 'uncertain' : geo.kind || 'acts',
+        tabindex: 0,
+        'aria-label': `${item.name} - ${location.name}`
+      });
+      const labelOffset = index % 2 === 0 ? -10 : 18;
+      group.appendChild(createSvgElement('circle', { cx: x, cy: y, r: geo.kind === 'journey' ? 4.5 : 5.8 }));
+      const label = createSvgElement('text', { x: x + 8, y: y + labelOffset });
+      label.textContent = location.name;
+      group.appendChild(label);
+      registerLinkedElement(mapBindings, id, group);
+      group.addEventListener('mouseenter', () => setLinkedFocus(id, true));
+      group.addEventListener('focus', () => setLinkedFocus(id, true));
+      group.addEventListener('mousemove', (e) => showTooltip(e, item));
+      group.addEventListener('mouseleave', () => {
+        setLinkedFocus(id, false);
+        tooltip.classList.remove('show');
+      });
+      group.addEventListener('blur', () => {
+        setLinkedFocus(id, false);
+        tooltip.classList.remove('show');
+      });
+      ntMap.appendChild(group);
+    });
+  });
+}
+
 function renderNtEvents(data, laneEl, range, topBase = 74, rowGap = 48, className = 'nt-event-dot', showLabels = false) {
   data.forEach((item, index) => {
     if (!item.year) return;
@@ -560,6 +847,7 @@ function renderNtEvents(data, laneEl, range, topBase = 74, rowGap = 48, classNam
       dot.innerHTML = `<span class="event-label">${item.name}</span>`;
     }
     dot.setAttribute('aria-label', item.name);
+    wireLinkedHover(dot, item);
     dot.addEventListener('mousemove', (e) => showTooltip(e, item));
     dot.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
     laneEl.appendChild(dot);
@@ -580,6 +868,7 @@ function renderJourneyBars(data, laneEl, range, topBase = 190, rowGap = 48) {
     bar.style.width = `${Math.max(1.4, toPercent(end, range) - toPercent(start, range))}%`;
     bar.style.top = `${topBase + (item.row ?? index % 6) * rowGap}px`;
     bar.innerText = item.name;
+    wireLinkedHover(bar, item);
     bar.addEventListener('mousemove', (e) => showTooltip(e, item));
     bar.addEventListener('mouseleave', () => tooltip.classList.remove('show'));
     laneEl.appendChild(bar);
@@ -681,6 +970,7 @@ renderMinistryLines(exileProphetsPriests, document.getElementById('exile-lane'),
 renderLane(foreignKings, document.getElementById('exile-lane'), exileRange, false, 5, 300);
 
 renderGospelLane(gospelEvents, document.getElementById('gospel-lane'), gospelRange);
+renderNtMap();
 renderNtEvents(actsEvents, document.getElementById('acts-lane'), actsRange, 76, 58, 'nt-event-dot', true);
 renderJourneyBars(actsEvents, document.getElementById('acts-lane'), actsRange, 400, 38);
 renderNtEvents(epistleEvents, document.getElementById('epistles-lane'), epistlesRange, 72, 50, 'letter-dot', true);

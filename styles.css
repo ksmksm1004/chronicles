@@ -289,6 +289,13 @@ body {
   background: var(--letter);
   box-shadow: 0 0 0 4px rgba(196,240,111,.1), 0 0 14px rgba(196,240,111,.28);
 }
+.nt-event-dot.timeline-active,
+.letter-dot.timeline-active {
+  transform: translate(-50%, -50%) scale(1.35);
+  z-index: 13;
+  border-color: #fff;
+  box-shadow: 0 0 0 8px rgba(241,227,139,.16), 0 0 26px rgba(241,227,139,.52);
+}
 .event-label {
   position: absolute;
   top: 18px;
@@ -327,10 +334,150 @@ body {
   background: color-mix(in srgb, var(--apostle), transparent 28%);
 }
 .journey-bar:hover,
-.journey-bar:focus-visible {
+.journey-bar:focus-visible,
+.journey-bar.timeline-active {
   transform: translateY(-3px) scale(1.015);
   box-shadow: 0 12px 22px rgba(0,0,0,.28);
   z-index: 11;
+}
+.nt-map-section {
+  padding: 1rem;
+}
+.nt-map-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: .75rem;
+}
+.nt-map-heading h2 {
+  margin-bottom: .25rem;
+}
+.nt-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: .75rem;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 700;
+}
+.nt-map-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: .38rem;
+  white-space: nowrap;
+}
+.map-sample {
+  width: .78rem;
+  height: .78rem;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.72);
+  display: inline-block;
+}
+.map-sample.acts { background: var(--acts); }
+.map-sample.letter { background: var(--letter); }
+.map-sample.uncertain {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--muted);
+}
+.map-sample.journey {
+  width: 1.7rem;
+  height: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--acts);
+}
+.nt-map-shell {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  background: #efe9d6;
+}
+.nt-map {
+  display: block;
+  width: 100%;
+  min-height: 500px;
+}
+.map-source-image {
+  opacity: .86;
+}
+.map-grid {
+  stroke: rgba(7,16,33,.08);
+  stroke-width: 1;
+}
+.map-route {
+  fill: none;
+  stroke: #ff7a1a;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: .12;
+  pointer-events: stroke;
+  transition: opacity .15s ease, stroke-width .15s ease, filter .15s ease;
+}
+.map-route.letter-route {
+  stroke: #7ac70c;
+}
+.map-route.map-active {
+  opacity: .92;
+  stroke-width: 8;
+  filter: drop-shadow(0 0 10px rgba(242,166,90,.58));
+}
+.map-point {
+  cursor: pointer;
+}
+.map-point circle {
+  fill: #ff7a1a;
+  stroke: rgba(7,16,33,.86);
+  stroke-width: 3;
+  filter: drop-shadow(0 1px 5px rgba(255,255,255,.76));
+  transition: r .15s ease, filter .15s ease, opacity .15s ease;
+}
+.map-point[data-kind='letter'] circle {
+  fill: #7ac70c;
+  filter: drop-shadow(0 1px 5px rgba(255,255,255,.76));
+}
+.map-point[data-kind='uncertain'] circle {
+  fill: rgba(255,255,255,.78);
+  stroke: #29374c;
+  stroke-dasharray: 3 3;
+}
+.map-point text {
+  fill: #101827;
+  font-size: 15px;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: rgba(255,255,255,.82);
+  stroke-width: 4px;
+  text-shadow: none;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+.map-point.map-active circle {
+  r: 11;
+  filter: drop-shadow(0 0 10px rgba(255,255,255,.92));
+}
+.map-point.map-active text {
+  opacity: 1;
+}
+.map-point.map-dim {
+  opacity: .28;
+}
+.nt-map-caption {
+  position: absolute;
+  right: .8rem;
+  bottom: .65rem;
+  max-width: min(560px, 86%);
+  color: rgba(7,16,33,.72);
+  font-size: .76rem;
+  line-height: 1.35;
+  text-align: right;
+  text-shadow: 0 1px 3px rgba(255,255,255,.9);
+  pointer-events: none;
 }
 .milestone:hover,
 .milestone:focus-visible {
@@ -397,3 +544,26 @@ body {
 .lane-desc{margin:.25rem 0 .8rem; color:var(--muted); font-size:.9rem;}
 .tooltip { position:fixed; z-index:20; pointer-events:none; max-width:min(320px,88vw); background:rgba(7,16,33,.96); border:1px solid rgba(255,255,255,.2); border-radius:10px; padding:.7rem .8rem; font-size:.84rem; line-height:1.4; opacity:0; transition:opacity .1s ease; }
 .tooltip.show { opacity:1; }
+
+@media (max-width: 760px) {
+  .nt-map-heading {
+    display: block;
+  }
+
+  .nt-map-legend {
+    justify-content: flex-start;
+    margin-top: .65rem;
+  }
+
+  .nt-map {
+    min-height: 340px;
+  }
+
+  .map-region {
+    font-size: 11px;
+  }
+
+  .map-point text {
+    font-size: 9px;
+  }
+}
