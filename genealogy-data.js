@@ -251,7 +251,7 @@
   meribLine.nodes.at(-1).children.push(...people('아스리감|보그루|이스마엘|스아랴|오바댜|하난', '대상 8:38 · 9:44', { kind: 'tribe' }));
   benjamin.children.push(bela, becher, person('여디아엘', '대상 7:6,10–11', [person('빌한', '대상 7:10', people('여우스|베냐민|에훗|그나아나|세단|다시스|아히사할', '대상 7:10', { kind: 'tribe' }), { kind: 'tribe' })], { kind: 'tribe' }), person('아하라', '대상 8:1', [], { kind: 'tribe' }), person('노하', '대상 8:2', [], { kind: 'tribe' }), person('라바', '대상 8:2', [], { kind: 'tribe' }), jeiel);
 
-  const postExile = person('포로 귀환 후 예루살렘 계보', '대상 9:1–34', [], { kind: 'nation', note: '역대상 9장에 기록된 귀환 공동체의 대표 가문과 성전 직무자들입니다.' });
+  const postExile = person('포로 귀환 후 예루살렘 계보', '대상 9:1–34', [], { kind: 'nation', supplemental: true, note: '역대상 9장에 기록된 귀환 공동체의 대표 가문과 성전 직무자들입니다.' });
   jacob.children.push(postExile);
   postExile.children.push(
     person('유다 자손', '대상 9:4–6', [
@@ -280,6 +280,60 @@
     ], { kind: 'tribe', group: true }),
     person('문지기·성전 직무자', '대상 9:17–34', people('살룸|악굽|달몬|아히만|스가랴|므셀레먀|호사|오바댜|엘르아살|시므리|여히엘|맛디댜', '대상 9:17–34', { kind: 'tribe' }), { kind: 'tribe', group: true })
   );
+
+  Object.assign(adam, { lifespan: '930세 (창 5:5)', parenthood: '130세에 셋을 낳음 (창 5:3)' });
+  const genesisFiveFacts = [
+    ['912세 (창 5:8)', '105세에 에노스를 낳음 (창 5:6)'],
+    ['905세 (창 5:11)', '90세에 게난을 낳음 (창 5:9)'],
+    ['910세 (창 5:14)', '70세에 마할랄렐을 낳음 (창 5:12)'],
+    ['895세 (창 5:17)', '65세에 야렛을 낳음 (창 5:15)'],
+    ['962세 (창 5:20)', '162세에 에녹을 낳음 (창 5:18)'],
+    ['365년 · 하나님이 데려가심 (창 5:23–24)', '65세에 므두셀라를 낳음 (창 5:21)'],
+    ['969세 (창 5:27)', '187세에 라멕을 낳음 (창 5:25)'],
+    ['777세 (창 5:31)', '182세에 노아를 낳음 (창 5:28–29)'],
+    ['950세 (창 9:29)', '500세 이후 셈·함·야벳을 낳기 시작함 (창 5:32)']
+  ];
+  sethLine.nodes.forEach((node, index) => Object.assign(node, {
+    lifespan: genesisFiveFacts[index][0],
+    parenthood: genesisFiveFacts[index][1]
+  }));
+  Object.assign(shem, { lifespan: '600세 (창 11:10–11)', parenthood: '100세에 아르박삿을 낳음 (창 11:10)' });
+  Object.assign(arphaxad, { lifespan: '438세 (창 11:12–13)', parenthood: '35세에 셀라를 낳음 (창 11:12)' });
+  Object.assign(eberLine.nodes[0], { lifespan: '433세 (창 11:14–15)', parenthood: '30세에 에벨을 낳음 (창 11:14)' });
+  Object.assign(eber, { lifespan: '464세 (창 11:16–17)', parenthood: '34세에 벨렉을 낳음 (창 11:16)' });
+  const postFloodFacts = [
+    ['239세 (창 11:18–19)', '30세에 르우를 낳음 (창 11:18)'],
+    ['239세 (창 11:20–21)', '32세에 스룩을 낳음 (창 11:20)'],
+    ['230세 (창 11:22–23)', '30세에 나홀을 낳음 (창 11:22)'],
+    ['148세 (창 11:24–25)', '29세에 데라를 낳음 (창 11:24)'],
+    ['205세 (창 11:32)', '70세 이후 아브람·나홀·하란을 낳음 (창 11:26)']
+  ];
+  pelegLine.nodes.forEach((node, index) => Object.assign(node, {
+    lifespan: postFloodFacts[index][0],
+    parenthood: postFloodFacts[index][1]
+  }));
+  Object.assign(abraham, { lifespan: '175세 · 사라 127세 (창 23:1, 25:7)', parenthood: '86세에 이스마엘, 100세(사라 90세)에 이삭을 낳음 (창 16:16, 17:17, 21:5)' });
+  Object.assign(ishmael, { lifespan: '137세 (창 25:17)' });
+  Object.assign(isaac, { lifespan: '180세 (창 35:28)', parenthood: '60세에 에서와 야곱을 낳음 (창 25:26)' });
+  Object.assign(jacob, { lifespan: '147세 (창 47:28)' });
+  Object.assign(joseph, { lifespan: '110세 (창 50:26)' });
+  Object.assign(levi, { lifespan: '137세 (출 6:16)' });
+  Object.assign(kohath, { lifespan: '133세 (출 6:18)' });
+  Object.assign(amram, { lifespan: '137세 (출 6:20)' });
+  Object.assign(aaron, { lifespan: '123세 (민 33:39)' });
+  Object.assign(amram.children.find((node) => node.name === '모세'), { lifespan: '120세 (신 34:7)' });
+  const findDescendant = (node, name) => {
+    if (!node) return null;
+    if (node.name === name) return node;
+    for (const child of node.children) {
+      const found = findDescendant(child, name);
+      if (found) return found;
+    }
+    return null;
+  };
+  const joshua = findDescendant(ephraim.children.find((node) => node.name === '브리아'), '여호수아');
+  if (joshua?.name === '여호수아') Object.assign(joshua, { lifespan: '110세 (수 24:29)' });
+  Object.assign(david, { lifespan: '약 70세 · 30세에 왕이 되어 40년 재위 (삼하 5:4–5)' });
 
   let idCounter = 0;
   const assignIds = (node, parent = null, depth = 0) => {

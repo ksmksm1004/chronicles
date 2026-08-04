@@ -195,8 +195,10 @@
             <input id="genealogy-search" type="search" placeholder="인물 이름 검색 (예: 다윗, 마리아)" autocomplete="off" />
           </label>
           <div class="genealogy-actions">
-            <button type="button" id="genealogy-expand-all">모두 펼치기</button>
             <button type="button" id="genealogy-collapse-all">모두 접기</button>
+            <button type="button" id="genealogy-expand-tribes">12지파까지</button>
+            <button type="button" id="genealogy-expand-david">다윗까지</button>
+            <button type="button" id="genealogy-expand-all">모두 펼치기</button>
             <button type="button" id="genealogy-fit" title="전체 족보를 화면에 맞추기">화면 맞춤</button>
             <button type="button" id="genealogy-fullscreen" title="족보 캔버스를 전체 화면으로 보기">전체 화면</button>
             <span class="toolbar-divider" aria-hidden="true"></span>
@@ -227,6 +229,8 @@
             <span id="genealogy-detail-relation">인류의 계보 시작</span>
             <dl>
               <div><dt>배우자</dt><dd id="genealogy-detail-spouse">하와</dd></div>
+              <div id="genealogy-detail-lifespan-row" hidden><dt>수명</dt><dd id="genealogy-detail-lifespan"></dd></div>
+              <div id="genealogy-detail-parenthood-row" hidden><dt>출생 기록</dt><dd id="genealogy-detail-parenthood"></dd></div>
               <div><dt>본문</dt><dd id="genealogy-detail-refs">창 2–5장 · 대상 1:1</dd></div>
             </dl>
             <p id="genealogy-detail-note">성경 족보의 첫 인물입니다.</p>
