@@ -11,6 +11,7 @@
       <nav class="page-tabs" aria-label="연대기 선택">
         <button type="button" class="page-tab active" data-page-target="old-testament">구약 연대기</button>
         <button type="button" class="page-tab" data-page-target="new-testament">신약 연대기</button>
+        <button type="button" class="page-tab" data-page-target="genealogy">성경 족보</button>
       </nav>
       <div class="page-intro active" id="old-testament-intro">
         <h1>구약 전체 연대기</h1>
@@ -47,10 +48,25 @@
           <span><i class="line-sample milestone-sample"></i>역사 사건</span>
         </div>
       </div>
+      <div class="page-intro genealogy-intro" id="genealogy-intro">
+        <p class="eyebrow">ADAM TO JESUS · INTERACTIVE GENEALOGY</p>
+        <h1>아담에서 예수 그리스도까지</h1>
+        <p>
+          창세기와 역대상의 큰 가지에 마태복음·누가복음의 메시아 계보를 이어 붙였습니다.
+          인물을 눌러 후손을 열고 닫거나, 화면을 끌고 휠을 움직여 거대한 족보를 자유롭게 탐색해 보세요.
+        </p>
+        <div class="legend genealogy-legend">
+          <span><i class="dot promise"></i>메시아 계보</span>
+          <span><i class="dot tribe"></i>이스라엘 열두 지파</span>
+          <span><i class="dot nation"></i>민족 계보</span>
+          <span><i class="dot spouse"></i>배우자</span>
+          <span><i class="dot woman"></i>여성 인물</span>
+        </div>
+      </div>
     </header>
 
     <main>
-      <section class="controls">
+      <section class="controls" id="timeline-controls">
         <label for="zoom">타임라인 확대/축소</label>
         <input id="zoom" type="range" min="1" max="4" step="0.1" value="1.8" />
         <span id="zoom-label">1.8x</span>
@@ -170,10 +186,64 @@
           </div>
         </article>
       </section>
+
+      <section class="genealogy-page timeline-page" id="genealogy" aria-label="아담에서 예수 그리스도까지의 성경 족보">
+        <div class="genealogy-toolbar" aria-label="족보 탐색 도구">
+          <label class="genealogy-search">
+            <span class="sr-only">인물 검색</span>
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.4A7.75 7.75 0 1 1 3.5 11.25a7.75 7.75 0 0 1 15.5 0Z"/></svg>
+            <input id="genealogy-search" type="search" placeholder="인물 이름 검색 (예: 다윗, 마리아)" autocomplete="off" />
+          </label>
+          <div class="genealogy-actions">
+            <button type="button" id="genealogy-expand-all">모두 펼치기</button>
+            <button type="button" id="genealogy-collapse-all">모두 접기</button>
+            <button type="button" id="genealogy-fit" title="전체 족보를 화면에 맞추기">화면 맞춤</button>
+            <button type="button" id="genealogy-fullscreen" title="족보 캔버스를 전체 화면으로 보기">전체 화면</button>
+            <span class="toolbar-divider" aria-hidden="true"></span>
+            <button type="button" id="genealogy-zoom-out" class="icon-action" aria-label="축소">−</button>
+            <output id="genealogy-zoom-label" aria-live="polite">100%</output>
+            <button type="button" id="genealogy-zoom-in" class="icon-action" aria-label="확대">+</button>
+          </div>
+        </div>
+
+        <div class="genealogy-stage" id="genealogy-stage">
+          <svg id="genealogy-svg" role="img" aria-label="위에서 아래로 펼쳐지는 성경 인물 족보">
+            <defs>
+              <filter id="node-shadow" x="-30%" y="-30%" width="160%" height="180%">
+                <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#020817" flood-opacity=".42"/>
+              </filter>
+            </defs>
+            <g id="genealogy-viewport">
+              <g id="genealogy-links"></g>
+              <g id="genealogy-nodes"></g>
+            </g>
+          </svg>
+          <div class="genealogy-empty" id="genealogy-empty" hidden>검색 결과가 없습니다.</div>
+          <div class="genealogy-hint">드래그하여 이동 · 휠로 확대/축소 · 인물을 눌러 가지 열기</div>
+          <aside class="genealogy-detail" id="genealogy-detail" aria-live="polite">
+            <button type="button" id="genealogy-detail-close" aria-label="인물 정보 닫기">×</button>
+            <span class="detail-kicker">선택한 인물</span>
+            <strong id="genealogy-detail-name">아담</strong>
+            <span id="genealogy-detail-relation">인류의 계보 시작</span>
+            <dl>
+              <div><dt>배우자</dt><dd id="genealogy-detail-spouse">하와</dd></div>
+              <div><dt>본문</dt><dd id="genealogy-detail-refs">창 2–5장 · 대상 1:1</dd></div>
+            </dl>
+            <p id="genealogy-detail-note">성경 족보의 첫 인물입니다.</p>
+          </aside>
+        </div>
+
+        <footer class="genealogy-footer">
+          <p><strong id="genealogy-visible-count">0명</strong> 표시 중 <span>·</span> <span id="genealogy-total-count">0명 수록</span></p>
+          <p>주요 본문: 창세기 5·10·11장 · 역대상 1–9장 · 마태복음 1장 · 누가복음 3장</p>
+        </footer>
+      </section>
     </main>
 
     <aside id="tooltip" class="tooltip" role="status" aria-live="polite"></aside>
 
+    <script src="genealogy-data.js"></script>
     <script src="script.js"></script>
+    <script src="genealogy.js"></script>
   </body>
 </html>

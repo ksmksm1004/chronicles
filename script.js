@@ -989,6 +989,7 @@ function zoomAroundPointer(sectionScroll, zoomKey, delta, clientX) {
 zoomInput.addEventListener('input', (e) => setZoom(e.target.value));
 timelinePages.forEach((page) => {
   page.addEventListener('wheel', (e) => {
+    if (page.id === 'genealogy') return;
     const sectionScroll = e.target.closest('.section-scroll');
     if (!sectionScroll && !e.target.closest('.timeline-page')) return;
 
@@ -1063,6 +1064,21 @@ document.querySelectorAll('.page-tab').forEach((tab) => {
     document.querySelectorAll('.page-tab').forEach((item) => item.classList.toggle('active', item === tab));
     document.querySelectorAll('.page-intro').forEach((intro) => intro.classList.toggle('active', intro.id === `${target}-intro`));
     timelinePages.forEach((page) => page.classList.toggle('active', page.id === target));
+    document.getElementById('timeline-controls').hidden = target === 'genealogy';
     tooltip.classList.remove('show');
+    if (target === 'genealogy') window.dispatchEvent(new CustomEvent('genealogy:activate'));
+    if (window.location.hash !== `#${target}`) {
+      const nextUrl = new URL(window.location.href);
+      nextUrl.hash = target;
+      history.replaceState(null, '', nextUrl);
+    }
   });
 });
+
+const requestedPage = new URLSearchParams(window.location.search).get('page') || window.location.hash.slice(1);
+const initialPageTab = Array.from(document.querySelectorAll('.page-tab'))
+  .find((tab) => tab.dataset.pageTarget === requestedPage);
+if (initialPageTab && !initialPageTab.classList.contains('active')) {
+  initialPageTab.click();
+  requestAnimationFrame(() => window.scrollTo(0, 0));
+}
