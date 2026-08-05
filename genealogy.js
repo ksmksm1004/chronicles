@@ -54,6 +54,7 @@
   const MAX_COLUMN_RADIUS = 24;
   const COLUMN_EXPANSION_STEP = 4;
   const SIBLINGS_PER_ROW = 9;
+  const BRANCHING_SIBLINGS_PER_ROW = 4;
   const MAX_BRANCH_ROW_RESERVE = 9;
   const MAX_DENSE_ROW_PADDING = 150;
 
@@ -136,6 +137,14 @@
         || null;
     }
 
+    function getChildrenPerRow(children) {
+      const branchingChildren = children.filter((child) => child.children.length > 0).length;
+      const branchingRatio = children.length ? branchingChildren / children.length : 0;
+      const needsFamilyRows = (children.length >= 10 && branchingChildren >= 3)
+        || (children.length >= 7 && branchingRatio > .5);
+      return needsFamilyRows ? BRANCHING_SIBLINGS_PER_ROW : SIBLINGS_PER_ROW;
+    }
+
     function placeChunk(chunk, parentColumn, startingRow, anchorChild = null) {
       let row = startingRow;
       while (true) {
@@ -179,10 +188,11 @@
       const parent = queue.shift();
       const children = isVisibleChild(parent).filter((child) => visibleSet.has(child.id));
       const anchorChild = getAnchorChild(children);
+      const childrenPerRow = getChildrenPerRow(children);
       let nextRow = Math.max(parent.layoutRow + 1, parent.minimumChildRow || 0);
       let lastPlacedRow = nextRow - 1;
-      for (let index = 0; index < children.length; index += SIBLINGS_PER_ROW) {
-        const chunk = children.slice(index, index + SIBLINGS_PER_ROW);
+      for (let index = 0; index < children.length; index += childrenPerRow) {
+        const chunk = children.slice(index, index + childrenPerRow);
         const placedRow = placeChunk(chunk, parent.layoutColumn, nextRow, anchorChild);
         lastPlacedRow = Math.max(lastPlacedRow, placedRow);
         nextRow = placedRow + 1;
@@ -195,7 +205,7 @@
         const grandchildren = isVisibleChild(child).filter((entry) => visibleSet.has(entry.id));
         if (!grandchildren.length) return;
         child.minimumChildRow = branchRow;
-        const immediateRows = Math.ceil(grandchildren.length / SIBLINGS_PER_ROW);
+        const immediateRows = Math.ceil(grandchildren.length / getChildrenPerRow(grandchildren));
         const deeperReserve = Math.min(
           MAX_BRANCH_ROW_RESERVE,
           Math.floor(Math.max(0, visibleSubtreeSize(child) - grandchildren.length - 1) / 16)
@@ -248,27 +258,48 @@
     return value.length > max ? `${value.slice(0, max - 1)}…` : value;
   }
 
-  function makeLinkSegment({ source, target }, busY) {
+  function makeLinkSegment({ source, target }, route) {
     const startX = source.layoutX + NODE_WIDTH / 2;
     const startY = source.layoutY + getFamilyHeight(source);
     const endX = target.layoutX + NODE_WIDTH / 2;
     const endY = target.layoutY;
-    return `M ${startX} ${startY} V ${busY} H ${endX} V ${endY}`;
+    if (route.trunkX === null) return `M ${startX} ${startY} V ${route.busY} H ${endX} V ${endY}`;
+    return `M ${startX} ${startY} V ${route.firstBusY} H ${route.trunkX} V ${route.busY} H ${endX} V ${endY}`;
   }
 
   function makeLinkPaths(links) {
     const buckets = new Map();
-    const busBySource = new Map();
-    links.forEach(({ source, target }) => {
+    const linksBySource = new Map();
+    const routeByTarget = new Map();
+    links.forEach((link) => {
+      if (!linksBySource.has(link.source.id)) linksBySource.set(link.source.id, []);
+      linksBySource.get(link.source.id).push(link);
+    });
+    linksBySource.forEach((familyLinks) => {
+      const { source } = familyLinks[0];
       const startY = source.layoutY + getFamilyHeight(source);
-      const previous = busBySource.get(source.id);
-      const nearestChildY = previous?.nearestChildY === undefined
-        ? target.layoutY
-        : Math.min(previous.nearestChildY, target.layoutY);
-      const available = Math.max(28, nearestChildY - startY);
-      busBySource.set(source.id, {
-        nearestChildY,
-        y: startY + Math.min(86, available * .36)
+      const rows = new Map();
+      familyLinks.forEach((link) => {
+        if (!rows.has(link.target.layoutRow)) rows.set(link.target.layoutRow, []);
+        rows.get(link.target.layoutRow).push(link);
+      });
+      const orderedRows = Array.from(rows.values()).sort((a, b) => a[0].target.layoutY - b[0].target.layoutY);
+      const allCenters = familyLinks.map(({ target }) => target.layoutX + NODE_WIDTH / 2);
+      const laneOffset = DENSE_X_GAP * .42;
+      const leftLane = Math.min(...allCenters) - laneOffset;
+      const rightLane = Math.max(...allCenters) + laneOffset;
+      const nearestChildY = orderedRows[0][0].target.layoutY;
+      const firstBusY = startY + Math.min(86, Math.max(28, nearestChildY - startY) * .36);
+
+      orderedRows.forEach((rowLinks, rowIndex) => {
+        const childY = rowLinks[0].target.layoutY;
+        const rowBusY = rowIndex === 0
+          ? firstBusY
+          : childY - Math.min(86, Math.max(42, (childY - startY) * .12));
+        const trunkX = rowIndex === 0 ? null : (rowIndex % 2 ? rightLane : leftLane);
+        rowLinks.forEach(({ target }) => {
+          routeByTarget.set(target.id, { busY: rowBusY, firstBusY, trunkX });
+        });
       });
     });
     links.forEach((link) => {
@@ -277,7 +308,7 @@
       const state = query ? (highlighted ? 'highlighted' : 'dimmed') : 'normal';
       const key = `${promise ? 'promise' : 'regular'}-${state}`;
       if (!buckets.has(key)) buckets.set(key, { promise, state, segments: [] });
-      buckets.get(key).segments.push(makeLinkSegment(link, busBySource.get(link.source.id).y));
+      buckets.get(key).segments.push(makeLinkSegment(link, routeByTarget.get(link.target.id)));
     });
     return Array.from(buckets.values()).map(({ promise, state, segments }) => {
       const classes = ['genealogy-link'];
