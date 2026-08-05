@@ -23,6 +23,7 @@
   const detailParenthood = document.getElementById('genealogy-detail-parenthood');
   const detailRefs = document.getElementById('genealogy-detail-refs');
   const detailNote = document.getElementById('genealogy-detail-note');
+  const detailClose = document.getElementById('genealogy-detail-close');
 
   const expanded = new Set();
   let selectedId = null;
@@ -43,6 +44,9 @@
   const X_GAP = 184;
   const Y_GAP = 164;
   const MARGIN = 120;
+  const MIN_COLUMN = -4;
+  const MAX_COLUMN = 4;
+  const SIBLINGS_PER_ROW = 5;
 
   function svgElement(tag, attrs = {}) {
     const element = document.createElementNS(SVG_NS, tag);
@@ -76,24 +80,64 @@
   }
 
   function layoutTree(visible) {
-    let leafIndex = 0;
     const visibleSet = new Set(visible.map((node) => node.id));
+    const occupied = new Map();
+    const queue = [data.root];
 
-    function place(node) {
-      const children = isVisibleChild(node).filter((child) => visibleSet.has(child.id));
-      children.forEach(place);
-      if (children.length) {
-        node.layoutX = (children[0].layoutX + children.at(-1).layoutX) / 2;
-      } else {
-        node.layoutX = leafIndex * X_GAP;
-        leafIndex += 1;
-      }
-      node.layoutY = node.visibleDepth * Y_GAP;
+    function rowSlots(row) {
+      if (!occupied.has(row)) occupied.set(row, new Set());
+      return occupied.get(row);
     }
 
-    place(data.root);
+    function candidateStarts(count, parentColumn) {
+      const starts = [];
+      for (let start = MIN_COLUMN; start <= MAX_COLUMN - count + 1; start += 1) starts.push(start);
+      return starts.sort((a, b) => {
+        const aCenter = a + (count - 1) / 2;
+        const bCenter = b + (count - 1) / 2;
+        return Math.abs(aCenter - parentColumn) - Math.abs(bCenter - parentColumn) || a - b;
+      });
+    }
+
+    function placeChunk(chunk, parentColumn, startingRow) {
+      let row = startingRow;
+      while (true) {
+        const slots = rowSlots(row);
+        const start = candidateStarts(chunk.length, parentColumn)
+          .find((candidate) => chunk.every((_, index) => !slots.has(candidate + index)));
+        if (start !== undefined) {
+          chunk.forEach((node, index) => {
+            node.layoutColumn = start + index;
+            node.layoutRow = row;
+            slots.add(node.layoutColumn);
+          });
+          return row;
+        }
+        row += 1;
+      }
+    }
+
+    data.root.layoutColumn = 0;
+    data.root.layoutRow = 0;
+    rowSlots(0).add(0);
+
+    while (queue.length) {
+      const parent = queue.shift();
+      const children = isVisibleChild(parent).filter((child) => visibleSet.has(child.id));
+      let nextRow = parent.layoutRow + 1;
+      for (let index = 0; index < children.length; index += SIBLINGS_PER_ROW) {
+        const chunk = children.slice(index, index + SIBLINGS_PER_ROW);
+        const placedRow = placeChunk(chunk, parent.layoutColumn, nextRow);
+        nextRow = placedRow + 1;
+      }
+      queue.push(...children);
+    }
+
+    visible.forEach((node) => {
+      node.layoutX = node.layoutColumn * X_GAP;
+      node.layoutY = node.layoutRow * Y_GAP;
+    });
     const xs = visible.map((node) => node.layoutX);
-    const ys = visible.map((node) => node.layoutY);
     const minX = Math.min(...xs) - MARGIN;
     const maxX = Math.max(...xs) + NODE_WIDTH + MARGIN;
     const minY = -MARGIN / 2;
@@ -441,7 +485,13 @@
     const rect = stage.getBoundingClientRect();
     zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, .89);
   });
-  document.getElementById('genealogy-detail-close').addEventListener('click', () => detail.classList.remove('show'));
+  detailClose.addEventListener('pointerdown', (event) => event.stopPropagation());
+  detailClose.addEventListener('click', (event) => {
+    event.stopPropagation();
+    selectedId = null;
+    detail.classList.remove('show');
+    nodesLayer.querySelectorAll('.genealogy-node.selected').forEach((node) => node.classList.remove('selected'));
+  });
   searchInput.addEventListener('input', (event) => revealMatches(event.target.value));
   searchInput.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter') return;
@@ -457,7 +507,7 @@
   }, { passive: false });
 
   stage.addEventListener('pointerdown', (event) => {
-    if (event.button !== 0 || event.target.closest('.genealogy-node')) return;
+    if (event.button !== 0 || event.target.closest('.genealogy-node, .genealogy-detail, button, input')) return;
     cancelSmoothZoom();
     stage.setPointerCapture(event.pointerId);
     dragState = { x: event.clientX, y: event.clientY, originX: transform.x, originY: transform.y };
