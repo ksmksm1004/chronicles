@@ -37,6 +37,9 @@
   let activePreset = null;
   let zoomTarget = null;
   let zoomFrame = null;
+  let panFrame = null;
+  let pendingPan = null;
+  let lastZoomPercent = null;
 
   const SVG_NS = 'http://www.w3.org/2000/svg';
   const NODE_WIDTH = 148;
@@ -45,9 +48,9 @@
   const Y_GAP = 164;
   const MARGIN = 120;
   const BASE_COLUMN_RADIUS = 4;
-  const MAX_COLUMN_RADIUS = 12;
-  const COLUMN_EXPANSION_STEP = 2;
-  const SIBLINGS_PER_ROW = 5;
+  const MAX_COLUMN_RADIUS = 20;
+  const COLUMN_EXPANSION_STEP = 4;
+  const SIBLINGS_PER_ROW = 7;
 
   function svgElement(tag, attrs = {}) {
     const element = document.createElementNS(SVG_NS, tag);
@@ -167,21 +170,31 @@
     return value.length > max ? `${value.slice(0, max - 1)}…` : value;
   }
 
-  function makeLink({ source, target }) {
+  function makeLinkSegment({ source, target }) {
     const startX = source.layoutX + NODE_WIDTH / 2;
     const startY = source.layoutY + getFamilyHeight(source);
     const endX = target.layoutX + NODE_WIDTH / 2;
     const endY = target.layoutY;
     const middleY = startY + (endY - startY) * .52;
-    const path = svgElement('path', {
-      class: `genealogy-link${target.kind === 'promise' ? ' promise-link' : ''}`,
-      d: `M ${startX} ${startY} C ${startX} ${middleY}, ${endX} ${middleY}, ${endX} ${endY}`,
-      'data-source': source.id,
-      'data-target': target.id
+    return `M ${startX} ${startY} C ${startX} ${middleY}, ${endX} ${middleY}, ${endX} ${endY}`;
+  }
+
+  function makeLinkPaths(links) {
+    const buckets = new Map();
+    links.forEach((link) => {
+      const promise = link.target.kind === 'promise';
+      const highlighted = query && matches.has(link.source.id) && matches.has(link.target.id);
+      const state = query ? (highlighted ? 'highlighted' : 'dimmed') : 'normal';
+      const key = `${promise ? 'promise' : 'regular'}-${state}`;
+      if (!buckets.has(key)) buckets.set(key, { promise, state, segments: [] });
+      buckets.get(key).segments.push(makeLinkSegment(link));
     });
-    if (query && !matches.has(source.id) && !matches.has(target.id)) path.classList.add('dimmed');
-    if (query && (matches.has(source.id) || matches.has(target.id))) path.classList.add('highlighted');
-    return path;
+    return Array.from(buckets.values()).map(({ promise, state, segments }) => {
+      const classes = ['genealogy-link'];
+      if (promise) classes.push('promise-link');
+      if (state !== 'normal') classes.push(state);
+      return svgElement('path', { class: classes.join(' '), d: segments.join(' ') });
+    });
   }
 
   function makeNode(node) {
@@ -275,7 +288,8 @@
   function render() {
     const { visible, links } = collectVisible(data.root);
     layoutTree(visible);
-    linksLayer.replaceChildren(...links.map(makeLink));
+    viewport.dataset.density = visible.length > 300 ? 'high' : 'normal';
+    linksLayer.replaceChildren(...makeLinkPaths(links));
     nodesLayer.replaceChildren(...visible.map(makeNode));
     addRouteLabels(visible);
     visibleCount.textContent = `${countWithSpouses(visible).toLocaleString('ko-KR')}명`;
@@ -286,7 +300,13 @@
 
   function applyTransform() {
     viewport.setAttribute('transform', `translate(${transform.x} ${transform.y}) scale(${transform.scale})`);
-    zoomLabel.textContent = `${Math.round(transform.scale * 100)}%`;
+    const lod = transform.scale < .16 ? 'overview' : transform.scale < .4 ? 'compact' : 'detail';
+    if (viewport.dataset.lod !== lod) viewport.dataset.lod = lod;
+    const zoomPercent = Math.round(transform.scale * 100);
+    if (zoomPercent !== lastZoomPercent) {
+      lastZoomPercent = zoomPercent;
+      zoomLabel.textContent = `${zoomPercent}%`;
+    }
   }
 
   function cancelSmoothZoom() {
@@ -512,6 +532,7 @@
   stage.addEventListener('pointerdown', (event) => {
     if (event.button !== 0 || event.target.closest('.genealogy-node, .genealogy-detail, button, input')) return;
     cancelSmoothZoom();
+    viewport.style.transition = '';
     stage.setPointerCapture(event.pointerId);
     dragState = { x: event.clientX, y: event.clientY, originX: transform.x, originY: transform.y };
     suppressClick = false;
@@ -522,11 +543,26 @@
     const dx = event.clientX - dragState.x;
     const dy = event.clientY - dragState.y;
     if (Math.abs(dx) + Math.abs(dy) > 4) suppressClick = true;
-    transform.x = dragState.originX + dx;
-    transform.y = dragState.originY + dy;
-    applyTransform();
+    pendingPan = { x: dragState.originX + dx, y: dragState.originY + dy };
+    if (!panFrame) {
+      panFrame = requestAnimationFrame(() => {
+        if (pendingPan) {
+          transform.x = pendingPan.x;
+          transform.y = pendingPan.y;
+          pendingPan = null;
+          applyTransform();
+        }
+        panFrame = null;
+      });
+    }
   });
   const endDrag = () => {
+    if (pendingPan) {
+      transform.x = pendingPan.x;
+      transform.y = pendingPan.y;
+      pendingPan = null;
+      applyTransform();
+    }
     dragState = null;
     stage.classList.remove('dragging');
     window.setTimeout(() => { suppressClick = false; }, 0);

@@ -847,7 +847,7 @@ body {
   stroke: rgba(126,151,197,.42);
   stroke-width: 1.35;
   vector-effect: non-scaling-stroke;
-  transition: stroke .16s ease, opacity .16s ease;
+  pointer-events: none;
 }
 
 .genealogy-link.promise-link {
@@ -869,8 +869,11 @@ body {
   stroke: #526b95;
   stroke-width: 1;
   rx: 8;
-  filter: url(#node-shadow);
   transition: fill .16s ease, stroke .16s ease;
+}
+
+#genealogy-viewport[data-lod='detail'][data-density='normal'] .genealogy-node .node-card {
+  filter: url(#node-shadow);
 }
 
 .genealogy-node[data-kind='promise'] .node-card { fill: #29263a; stroke: #cda846; }
@@ -963,6 +966,42 @@ body {
 .route-label.matthew text { fill: #f3cf69; }
 .route-label.luke rect { stroke: #78a9ff; }
 .route-label.luke text { fill: #9ebfff; }
+
+#genealogy-viewport[data-lod='overview'] .genealogy-link {
+  stroke-width: 4;
+  vector-effect: none;
+  shape-rendering: optimizeSpeed;
+}
+
+#genealogy-viewport[data-lod='overview'] .genealogy-link.promise-link { stroke-width: 6; }
+#genealogy-viewport[data-lod='overview'] .genealogy-link.highlighted { stroke-width: 8; }
+
+#genealogy-viewport[data-lod='overview'] :is(
+  .node-name,
+  .node-meta,
+  .node-toggle-ring,
+  .node-toggle-symbol,
+  .spouse-link,
+  .spouse-pill,
+  .spouse-name,
+  .route-label
+) {
+  display: none;
+}
+
+#genealogy-viewport[data-lod='overview'] .node-card {
+  shape-rendering: optimizeSpeed;
+}
+
+#genealogy-viewport[data-lod='compact'] :is(
+  .node-meta,
+  .spouse-link,
+  .spouse-pill,
+  .spouse-name,
+  .route-label
+) {
+  display: none;
+}
 
 .genealogy-detail {
   position: absolute;
