@@ -44,8 +44,9 @@
   const X_GAP = 184;
   const Y_GAP = 164;
   const MARGIN = 120;
-  const MIN_COLUMN = -4;
-  const MAX_COLUMN = 4;
+  const BASE_COLUMN_RADIUS = 4;
+  const MAX_COLUMN_RADIUS = 12;
+  const COLUMN_EXPANSION_STEP = 2;
   const SIBLINGS_PER_ROW = 5;
 
   function svgElement(tag, attrs = {}) {
@@ -89,9 +90,9 @@
       return occupied.get(row);
     }
 
-    function candidateStarts(count, parentColumn) {
+    function candidateStarts(count, parentColumn, radius) {
       const starts = [];
-      for (let start = MIN_COLUMN; start <= MAX_COLUMN - count + 1; start += 1) starts.push(start);
+      for (let start = -radius; start <= radius - count + 1; start += 1) starts.push(start);
       return starts.sort((a, b) => {
         const aCenter = a + (count - 1) / 2;
         const bCenter = b + (count - 1) / 2;
@@ -103,15 +104,17 @@
       let row = startingRow;
       while (true) {
         const slots = rowSlots(row);
-        const start = candidateStarts(chunk.length, parentColumn)
-          .find((candidate) => chunk.every((_, index) => !slots.has(candidate + index)));
-        if (start !== undefined) {
-          chunk.forEach((node, index) => {
-            node.layoutColumn = start + index;
-            node.layoutRow = row;
-            slots.add(node.layoutColumn);
-          });
-          return row;
+        for (let radius = BASE_COLUMN_RADIUS; radius <= MAX_COLUMN_RADIUS; radius += COLUMN_EXPANSION_STEP) {
+          const start = candidateStarts(chunk.length, parentColumn, radius)
+            .find((candidate) => chunk.every((_, index) => !slots.has(candidate + index)));
+          if (start !== undefined) {
+            chunk.forEach((node, index) => {
+              node.layoutColumn = start + index;
+              node.layoutRow = row;
+              slots.add(node.layoutColumn);
+            });
+            return row;
+          }
         }
         row += 1;
       }
