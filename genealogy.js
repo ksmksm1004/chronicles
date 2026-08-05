@@ -46,11 +46,14 @@
   const NODE_HEIGHT = 43;
   const X_GAP = 184;
   const Y_GAP = 164;
+  const DENSE_X_GAP = 232;
+  const DENSE_Y_GAP = 250;
+  const DENSE_NODE_THRESHOLD = 180;
   const MARGIN = 120;
   const BASE_COLUMN_RADIUS = 4;
-  const MAX_COLUMN_RADIUS = 20;
+  const MAX_COLUMN_RADIUS = 24;
   const COLUMN_EXPANSION_STEP = 4;
-  const SIBLINGS_PER_ROW = 7;
+  const SIBLINGS_PER_ROW = 9;
 
   function svgElement(tag, attrs = {}) {
     const element = document.createElementNS(SVG_NS, tag);
@@ -139,9 +142,12 @@
       queue.push(...children);
     }
 
+    const denseLayout = visible.length >= DENSE_NODE_THRESHOLD;
+    const horizontalGap = denseLayout ? DENSE_X_GAP : X_GAP;
+    const verticalGap = denseLayout ? DENSE_Y_GAP : Y_GAP;
     visible.forEach((node) => {
-      node.layoutX = node.layoutColumn * X_GAP;
-      node.layoutY = node.layoutRow * Y_GAP;
+      node.layoutX = node.layoutColumn * horizontalGap;
+      node.layoutY = node.layoutRow * verticalGap;
     });
     const xs = visible.map((node) => node.layoutX);
     const minX = Math.min(...xs) - MARGIN;
