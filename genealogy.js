@@ -54,6 +54,8 @@
   const MAX_COLUMN_RADIUS = 24;
   const COLUMN_EXPANSION_STEP = 4;
   const SIBLINGS_PER_ROW = 9;
+  const MAX_BRANCH_ROW_RESERVE = 9;
+  const MAX_DENSE_ROW_PADDING = 150;
 
   function svgElement(tag, attrs = {}) {
     const element = document.createElementNS(SVG_NS, tag);
@@ -90,6 +92,10 @@
     const visibleSet = new Set(visible.map((node) => node.id));
     const occupied = new Map();
     const queue = [data.root];
+    const promiseMemo = new Map();
+    const subtreeSizeMemo = new Map();
+
+    visible.forEach((node) => { node.minimumChildRow = 0; });
 
     function rowSlots(row) {
       if (!occupied.has(row)) occupied.set(row, new Set());
@@ -106,10 +112,49 @@
       });
     }
 
-    function placeChunk(chunk, parentColumn, startingRow) {
+    function followsPromiseLine(node) {
+      if (promiseMemo.has(node.id)) return promiseMemo.get(node.id);
+      const follows = node.kind === 'promise' || node.route === 'matthew'
+        || isVisibleChild(node).some((child) => visibleSet.has(child.id) && followsPromiseLine(child));
+      promiseMemo.set(node.id, follows);
+      return follows;
+    }
+
+    function visibleSubtreeSize(node) {
+      if (subtreeSizeMemo.has(node.id)) return subtreeSizeMemo.get(node.id);
+      const size = 1 + isVisibleChild(node)
+        .filter((child) => visibleSet.has(child.id))
+        .reduce((sum, child) => sum + visibleSubtreeSize(child), 0);
+      subtreeSizeMemo.set(node.id, size);
+      return size;
+    }
+
+    function getAnchorChild(children) {
+      return children.find((child) => child.route === 'matthew')
+        || children.find((child) => child.kind === 'promise')
+        || children.find(followsPromiseLine)
+        || null;
+    }
+
+    function placeChunk(chunk, parentColumn, startingRow, anchorChild = null) {
       let row = startingRow;
       while (true) {
         const slots = rowSlots(row);
+        const anchorIndex = anchorChild ? chunk.indexOf(anchorChild) : -1;
+        if (anchorIndex >= 0) {
+          const anchoredStart = parentColumn - anchorIndex;
+          const anchoredFits = chunk.every((_, index) => !slots.has(anchoredStart + index));
+          if (anchoredFits) {
+            chunk.forEach((node, index) => {
+              node.layoutColumn = anchoredStart + index;
+              node.layoutRow = row;
+              slots.add(node.layoutColumn);
+            });
+            return row;
+          }
+          row += 1;
+          continue;
+        }
         for (let radius = BASE_COLUMN_RADIUS; radius <= MAX_COLUMN_RADIUS; radius += COLUMN_EXPANSION_STEP) {
           const start = candidateStarts(chunk.length, parentColumn, radius)
             .find((candidate) => chunk.every((_, index) => !slots.has(candidate + index)));
@@ -133,21 +178,48 @@
     while (queue.length) {
       const parent = queue.shift();
       const children = isVisibleChild(parent).filter((child) => visibleSet.has(child.id));
-      let nextRow = parent.layoutRow + 1;
+      const anchorChild = getAnchorChild(children);
+      let nextRow = Math.max(parent.layoutRow + 1, parent.minimumChildRow || 0);
+      let lastPlacedRow = nextRow - 1;
       for (let index = 0; index < children.length; index += SIBLINGS_PER_ROW) {
         const chunk = children.slice(index, index + SIBLINGS_PER_ROW);
-        const placedRow = placeChunk(chunk, parent.layoutColumn, nextRow);
+        const placedRow = placeChunk(chunk, parent.layoutColumn, nextRow, anchorChild);
+        lastPlacedRow = Math.max(lastPlacedRow, placedRow);
         nextRow = placedRow + 1;
       }
+
+      // 한 부모의 여러 자녀 가문이 같은 세대 행에 뒤섞이지 않도록,
+      // 각 자녀의 펼쳐진 후손 규모에 비례한 세로 영역을 순서대로 예약한다.
+      let branchRow = lastPlacedRow + 1;
+      children.forEach((child) => {
+        const grandchildren = isVisibleChild(child).filter((entry) => visibleSet.has(entry.id));
+        if (!grandchildren.length) return;
+        child.minimumChildRow = branchRow;
+        const immediateRows = Math.ceil(grandchildren.length / SIBLINGS_PER_ROW);
+        const deeperReserve = Math.min(
+          MAX_BRANCH_ROW_RESERVE,
+          Math.floor(Math.max(0, visibleSubtreeSize(child) - grandchildren.length - 1) / 16)
+        );
+        branchRow += Math.max(1, immediateRows + deeperReserve) + 1;
+      });
       queue.push(...children);
     }
 
     const denseLayout = visible.length >= DENSE_NODE_THRESHOLD;
     const horizontalGap = denseLayout ? DENSE_X_GAP : X_GAP;
     const verticalGap = denseLayout ? DENSE_Y_GAP : Y_GAP;
+    const maxRow = Math.max(...visible.map((node) => node.layoutRow));
+    const rowOffsets = [0];
+    for (let row = 1; row <= maxRow; row += 1) {
+      const previousDensity = rowSlots(row - 1).size;
+      const densityPadding = denseLayout
+        ? Math.min(MAX_DENSE_ROW_PADDING, Math.max(0, previousDensity - 6) * 7)
+        : 0;
+      rowOffsets[row] = rowOffsets[row - 1] + verticalGap + densityPadding;
+    }
     visible.forEach((node) => {
       node.layoutX = node.layoutColumn * horizontalGap;
-      node.layoutY = node.layoutRow * verticalGap;
+      node.layoutY = rowOffsets[node.layoutRow];
     });
     const xs = visible.map((node) => node.layoutX);
     const minX = Math.min(...xs) - MARGIN;
@@ -176,24 +248,36 @@
     return value.length > max ? `${value.slice(0, max - 1)}…` : value;
   }
 
-  function makeLinkSegment({ source, target }) {
+  function makeLinkSegment({ source, target }, busY) {
     const startX = source.layoutX + NODE_WIDTH / 2;
     const startY = source.layoutY + getFamilyHeight(source);
     const endX = target.layoutX + NODE_WIDTH / 2;
     const endY = target.layoutY;
-    const middleY = startY + (endY - startY) * .52;
-    return `M ${startX} ${startY} C ${startX} ${middleY}, ${endX} ${middleY}, ${endX} ${endY}`;
+    return `M ${startX} ${startY} V ${busY} H ${endX} V ${endY}`;
   }
 
   function makeLinkPaths(links) {
     const buckets = new Map();
+    const busBySource = new Map();
+    links.forEach(({ source, target }) => {
+      const startY = source.layoutY + getFamilyHeight(source);
+      const previous = busBySource.get(source.id);
+      const nearestChildY = previous?.nearestChildY === undefined
+        ? target.layoutY
+        : Math.min(previous.nearestChildY, target.layoutY);
+      const available = Math.max(28, nearestChildY - startY);
+      busBySource.set(source.id, {
+        nearestChildY,
+        y: startY + Math.min(86, available * .36)
+      });
+    });
     links.forEach((link) => {
       const promise = link.target.kind === 'promise';
       const highlighted = query && matches.has(link.source.id) && matches.has(link.target.id);
       const state = query ? (highlighted ? 'highlighted' : 'dimmed') : 'normal';
       const key = `${promise ? 'promise' : 'regular'}-${state}`;
       if (!buckets.has(key)) buckets.set(key, { promise, state, segments: [] });
-      buckets.get(key).segments.push(makeLinkSegment(link));
+      buckets.get(key).segments.push(makeLinkSegment(link, busBySource.get(link.source.id).y));
     });
     return Array.from(buckets.values()).map(({ promise, state, segments }) => {
       const classes = ['genealogy-link'];

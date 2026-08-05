@@ -846,6 +846,8 @@ body {
   fill: none;
   stroke: rgba(126,151,197,.31);
   stroke-width: 1.35;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
   pointer-events: none;
 }
