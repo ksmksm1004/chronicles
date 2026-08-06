@@ -50,9 +50,8 @@
   const DENSE_Y_GAP = 250;
   const DENSE_NODE_THRESHOLD = 180;
   const MARGIN = 120;
-  const SIBLINGS_PER_ROW = 9;
-  const BRANCHING_SIBLINGS_PER_ROW = 4;
-  const MAX_BRANCH_ROW_RESERVE = 9;
+  const SUBTREE_GAP = 52;
+  const DENSE_SUBTREE_GAP = 76;
   const MAX_DENSE_ROW_PADDING = 150;
 
   function svgElement(tag, attrs = {}) {
@@ -88,59 +87,24 @@
 
   function layoutTree(visible) {
     const visibleSet = new Set(visible.map((node) => node.id));
-    const occupied = new Map();
-    const queue = [data.root];
     const promiseMemo = new Map();
-    const subtreeSizeMemo = new Map();
+    const spanMemo = new Map();
+    const childrenById = new Map();
+    const denseLayout = visible.length >= DENSE_NODE_THRESHOLD;
+    const horizontalGap = denseLayout ? DENSE_X_GAP : X_GAP;
+    const verticalGap = denseLayout ? DENSE_Y_GAP : Y_GAP;
+    const subtreeGap = denseLayout ? DENSE_SUBTREE_GAP : SUBTREE_GAP;
 
-    visible.forEach((node) => { node.minimumChildRow = 0; });
-
-    function rowSlots(row) {
-      if (!occupied.has(row)) occupied.set(row, new Set());
-      return occupied.get(row);
-    }
-
-    function findAvailableStart(count, parentColumn, slots) {
-      const desiredStart = Math.round(parentColumn - (count - 1) / 2);
-      const outwardDirection = parentColumn < 0 ? -1 : 1;
-      const furthestOccupied = slots.size
-        ? Math.max(...Array.from(slots, (column) => Math.abs(column - desiredStart)))
-        : 0;
-      const searchDistance = furthestOccupied + count + 2;
-      const fits = (start) => {
-        for (let index = 0; index < count; index += 1) {
-          if (slots.has(start + index)) return false;
-        }
-        return true;
-      };
-
-      for (let distance = 0; distance <= searchDistance; distance += 1) {
-        const candidates = distance === 0
-          ? [desiredStart]
-          : [desiredStart + distance * outwardDirection, desiredStart - distance * outwardDirection];
-        const available = candidates.find(fits);
-        if (available !== undefined) return available;
-      }
-
-      // 유한한 점유 열 바깥에는 반드시 빈 공간이 있으므로 실제로는 도달하지 않는다.
-      return desiredStart + (searchDistance + 1) * outwardDirection;
-    }
+    visible.forEach((node) => {
+      childrenById.set(node.id, isVisibleChild(node).filter((child) => visibleSet.has(child.id)));
+    });
 
     function followsPromiseLine(node) {
       if (promiseMemo.has(node.id)) return promiseMemo.get(node.id);
       const follows = node.kind === 'promise' || node.route === 'matthew'
-        || isVisibleChild(node).some((child) => visibleSet.has(child.id) && followsPromiseLine(child));
+        || childrenById.get(node.id).some(followsPromiseLine);
       promiseMemo.set(node.id, follows);
       return follows;
-    }
-
-    function visibleSubtreeSize(node) {
-      if (subtreeSizeMemo.has(node.id)) return subtreeSizeMemo.get(node.id);
-      const size = 1 + isVisibleChild(node)
-        .filter((child) => visibleSet.has(child.id))
-        .reduce((sum, child) => sum + visibleSubtreeSize(child), 0);
-      subtreeSizeMemo.set(node.id, size);
-      return size;
     }
 
     function getAnchorChild(children) {
@@ -150,94 +114,54 @@
         || null;
     }
 
-    function getChildrenPerRow(children) {
-      const branchingChildren = children.filter((child) => child.children.length > 0).length;
-      const branchingRatio = children.length ? branchingChildren / children.length : 0;
-      const needsFamilyRows = (children.length >= 10 && branchingChildren >= 3)
-        || (children.length >= 7 && branchingRatio > .5);
-      return needsFamilyRows ? BRANCHING_SIBLINGS_PER_ROW : SIBLINGS_PER_ROW;
+    // 각 후손 가지가 차지할 전체 폭을 먼저 계산한다. 형제의 하위 가문은
+    // 서로 겹치지 않는 독립 구역을 가지므로 다른 부모의 선이 침범할 수 없다.
+    function measureSubtree(node) {
+      if (spanMemo.has(node.id)) return spanMemo.get(node.id);
+      const children = childrenById.get(node.id);
+      const span = children.length
+        ? children.reduce((sum, child) => sum + measureSubtree(child), 0) + subtreeGap * (children.length - 1)
+        : horizontalGap;
+      spanMemo.set(node.id, Math.max(horizontalGap, span));
+      return spanMemo.get(node.id);
     }
 
-    function placeChunk(chunk, parentColumn, startingRow, anchorChild = null) {
-      let row = startingRow;
-      while (true) {
-        const slots = rowSlots(row);
-        const anchorIndex = anchorChild ? chunk.indexOf(anchorChild) : -1;
-        if (anchorIndex >= 0) {
-          const anchoredStart = parentColumn - anchorIndex;
-          const anchoredFits = chunk.every((_, index) => !slots.has(anchoredStart + index));
-          if (anchoredFits) {
-            chunk.forEach((node, index) => {
-              node.layoutColumn = anchoredStart + index;
-              node.layoutRow = row;
-              slots.add(node.layoutColumn);
-            });
-            return row;
-          }
-          row += 1;
-          continue;
-        }
-        const start = findAvailableStart(chunk.length, parentColumn, slots);
-        chunk.forEach((node, index) => {
-          node.layoutColumn = start + index;
-          node.layoutRow = row;
-          slots.add(node.layoutColumn);
-        });
-        return row;
-      }
-    }
-
-    data.root.layoutColumn = 0;
-    data.root.layoutRow = 0;
-    rowSlots(0).add(0);
-
-    while (queue.length) {
-      const parent = queue.shift();
-      const children = isVisibleChild(parent).filter((child) => visibleSet.has(child.id));
-      const anchorChild = getAnchorChild(children);
-      const childrenPerRow = getChildrenPerRow(children);
-      let nextRow = Math.max(parent.layoutRow + 1, parent.minimumChildRow || 0);
-      let lastPlacedRow = nextRow - 1;
-      for (let index = 0; index < children.length; index += childrenPerRow) {
-        const chunk = children.slice(index, index + childrenPerRow);
-        const placedRow = placeChunk(chunk, parent.layoutColumn, nextRow, anchorChild);
-        lastPlacedRow = Math.max(lastPlacedRow, placedRow);
-        nextRow = placedRow + 1;
-      }
-
-      // 한 부모의 여러 자녀 가문이 같은 세대 행에 뒤섞이지 않도록,
-      // 각 자녀의 펼쳐진 후손 규모에 비례한 세로 영역을 순서대로 예약한다.
-      let branchRow = lastPlacedRow + 1;
-      children.forEach((child) => {
-        const grandchildren = isVisibleChild(child).filter((entry) => visibleSet.has(entry.id));
-        if (!grandchildren.length) return;
-        child.minimumChildRow = branchRow;
-        const immediateRows = Math.ceil(grandchildren.length / getChildrenPerRow(grandchildren));
-        const deeperReserve = Math.min(
-          MAX_BRANCH_ROW_RESERVE,
-          Math.floor(Math.max(0, visibleSubtreeSize(child) - grandchildren.length - 1) / 16)
-        );
-        branchRow += Math.max(1, immediateRows + deeperReserve) + 1;
-      });
-      queue.push(...children);
-    }
-
-    const denseLayout = visible.length >= DENSE_NODE_THRESHOLD;
-    const horizontalGap = denseLayout ? DENSE_X_GAP : X_GAP;
-    const verticalGap = denseLayout ? DENSE_Y_GAP : Y_GAP;
-    const maxRow = Math.max(...visible.map((node) => node.layoutRow));
+    const maxRow = Math.max(...visible.map((node) => node.visibleDepth));
+    const rowDensity = Array.from({ length: maxRow + 1 }, () => 0);
+    visible.forEach((node) => { rowDensity[node.visibleDepth] += 1; });
     const rowOffsets = [0];
     for (let row = 1; row <= maxRow; row += 1) {
-      const previousDensity = rowSlots(row - 1).size;
       const densityPadding = denseLayout
-        ? Math.min(MAX_DENSE_ROW_PADDING, Math.max(0, previousDensity - 6) * 7)
+        ? Math.min(MAX_DENSE_ROW_PADDING, Math.max(0, rowDensity[row - 1] - 6) * 7)
         : 0;
       rowOffsets[row] = rowOffsets[row - 1] + verticalGap + densityPadding;
     }
-    visible.forEach((node) => {
-      node.layoutX = node.layoutColumn * horizontalGap;
-      node.layoutY = rowOffsets[node.layoutRow];
-    });
+
+    function placeSubtree(node, left) {
+      const children = childrenById.get(node.id);
+      let centerX;
+      if (!children.length) {
+        centerX = left + measureSubtree(node) / 2;
+      } else {
+        let cursor = left;
+        children.forEach((child) => {
+          placeSubtree(child, cursor);
+          cursor += measureSubtree(child) + subtreeGap;
+        });
+        const anchorChild = getAnchorChild(children);
+        centerX = anchorChild
+          ? anchorChild.layoutCenterX
+          : (children[0].layoutCenterX + children.at(-1).layoutCenterX) / 2;
+      }
+      node.layoutCenterX = centerX;
+      node.layoutX = centerX - NODE_WIDTH / 2;
+      node.layoutRow = node.visibleDepth;
+      node.layoutY = rowOffsets[node.visibleDepth];
+    }
+
+    measureSubtree(data.root);
+    placeSubtree(data.root, 0);
+
     const xs = visible.map((node) => node.layoutX);
     const minX = Math.min(...xs) - MARGIN;
     const maxX = Math.max(...xs) + NODE_WIDTH + MARGIN;
