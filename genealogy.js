@@ -50,9 +50,6 @@
   const DENSE_Y_GAP = 250;
   const DENSE_NODE_THRESHOLD = 180;
   const MARGIN = 120;
-  const BASE_COLUMN_RADIUS = 4;
-  const MAX_COLUMN_RADIUS = 24;
-  const COLUMN_EXPANSION_STEP = 4;
   const SIBLINGS_PER_ROW = 9;
   const BRANCHING_SIBLINGS_PER_ROW = 4;
   const MAX_BRANCH_ROW_RESERVE = 9;
@@ -103,14 +100,30 @@
       return occupied.get(row);
     }
 
-    function candidateStarts(count, parentColumn, radius) {
-      const starts = [];
-      for (let start = -radius; start <= radius - count + 1; start += 1) starts.push(start);
-      return starts.sort((a, b) => {
-        const aCenter = a + (count - 1) / 2;
-        const bCenter = b + (count - 1) / 2;
-        return Math.abs(aCenter - parentColumn) - Math.abs(bCenter - parentColumn) || a - b;
-      });
+    function findAvailableStart(count, parentColumn, slots) {
+      const desiredStart = Math.round(parentColumn - (count - 1) / 2);
+      const outwardDirection = parentColumn < 0 ? -1 : 1;
+      const furthestOccupied = slots.size
+        ? Math.max(...Array.from(slots, (column) => Math.abs(column - desiredStart)))
+        : 0;
+      const searchDistance = furthestOccupied + count + 2;
+      const fits = (start) => {
+        for (let index = 0; index < count; index += 1) {
+          if (slots.has(start + index)) return false;
+        }
+        return true;
+      };
+
+      for (let distance = 0; distance <= searchDistance; distance += 1) {
+        const candidates = distance === 0
+          ? [desiredStart]
+          : [desiredStart + distance * outwardDirection, desiredStart - distance * outwardDirection];
+        const available = candidates.find(fits);
+        if (available !== undefined) return available;
+      }
+
+      // 유한한 점유 열 바깥에는 반드시 빈 공간이 있으므로 실제로는 도달하지 않는다.
+      return desiredStart + (searchDistance + 1) * outwardDirection;
     }
 
     function followsPromiseLine(node) {
@@ -164,19 +177,13 @@
           row += 1;
           continue;
         }
-        for (let radius = BASE_COLUMN_RADIUS; radius <= MAX_COLUMN_RADIUS; radius += COLUMN_EXPANSION_STEP) {
-          const start = candidateStarts(chunk.length, parentColumn, radius)
-            .find((candidate) => chunk.every((_, index) => !slots.has(candidate + index)));
-          if (start !== undefined) {
-            chunk.forEach((node, index) => {
-              node.layoutColumn = start + index;
-              node.layoutRow = row;
-              slots.add(node.layoutColumn);
-            });
-            return row;
-          }
-        }
-        row += 1;
+        const start = findAvailableStart(chunk.length, parentColumn, slots);
+        chunk.forEach((node, index) => {
+          node.layoutColumn = start + index;
+          node.layoutRow = row;
+          slots.add(node.layoutColumn);
+        });
+        return row;
       }
     }
 
