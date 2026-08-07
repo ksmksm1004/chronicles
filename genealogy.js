@@ -44,15 +44,14 @@
   const SVG_NS = 'http://www.w3.org/2000/svg';
   const NODE_WIDTH = 148;
   const NODE_HEIGHT = 43;
-  const X_GAP = 184;
   const Y_GAP = 164;
-  const DENSE_X_GAP = 232;
-  const DENSE_Y_GAP = 250;
   const DENSE_NODE_THRESHOLD = 180;
   const MARGIN = 120;
-  const SUBTREE_GAP = 52;
-  const DENSE_SUBTREE_GAP = 76;
-  const MAX_DENSE_ROW_PADDING = 150;
+  const SUBTREE_GAP = 40;
+  const DENSE_SUBTREE_GAP = 44;
+  const MAX_DENSE_ROW_PADDING = 56;
+  const MAX_MAINLINE_DELAY = 4;
+  const MAINLINE_ROW_COST = 360;
 
   function svgElement(tag, attrs = {}) {
     const element = document.createElementNS(SVG_NS, tag);
@@ -87,80 +86,234 @@
 
   function layoutTree(visible) {
     const visibleSet = new Set(visible.map((node) => node.id));
-    const promiseMemo = new Map();
-    const spanMemo = new Map();
+    const matthewMemo = new Map();
+    const lukeMemo = new Map();
     const childrenById = new Map();
     const denseLayout = visible.length >= DENSE_NODE_THRESHOLD;
-    const horizontalGap = denseLayout ? DENSE_X_GAP : X_GAP;
-    const verticalGap = denseLayout ? DENSE_Y_GAP : Y_GAP;
-    const subtreeGap = denseLayout ? DENSE_SUBTREE_GAP : SUBTREE_GAP;
+    const horizontalClearance = denseLayout ? DENSE_SUBTREE_GAP : SUBTREE_GAP;
+    const edgeClearance = denseLayout ? 18 : 16;
 
     visible.forEach((node) => {
       childrenById.set(node.id, isVisibleChild(node).filter((child) => visibleSet.has(child.id)));
     });
 
-    function followsPromiseLine(node) {
-      if (promiseMemo.has(node.id)) return promiseMemo.get(node.id);
-      const follows = node.kind === 'promise' || node.route === 'matthew'
-        || childrenById.get(node.id).some(followsPromiseLine);
-      promiseMemo.set(node.id, follows);
+    function followsRoute(node, route, memo) {
+      if (memo.has(node.id)) return memo.get(node.id);
+      const follows = node.route === route || node.children.some((child) => followsRoute(child, route, memo));
+      memo.set(node.id, follows);
       return follows;
     }
 
+    const followsMatthewLine = (node) => followsRoute(node, 'matthew', matthewMemo);
+    const followsLukeLine = (node) => followsRoute(node, 'luke', lukeMemo);
+    const followsGospelLine = (node) => followsMatthewLine(node) || followsLukeLine(node);
+
     function getAnchorChild(children) {
-      return children.find((child) => child.route === 'matthew')
+      return children.find(followsMatthewLine)
+        || children.find(followsLukeLine)
         || children.find((child) => child.kind === 'promise')
-        || children.find(followsPromiseLine)
         || null;
     }
 
-    // 각 후손 가지가 차지할 전체 폭을 먼저 계산한다. 형제의 하위 가문은
-    // 서로 겹치지 않는 독립 구역을 가지므로 다른 부모의 선이 침범할 수 없다.
-    function measureSubtree(node) {
-      if (spanMemo.has(node.id)) return spanMemo.get(node.id);
-      const children = childrenById.get(node.id);
-      const span = children.length
-        ? children.reduce((sum, child) => sum + measureSubtree(child), 0) + subtreeGap * (children.length - 1)
-        : horizontalGap;
-      spanMemo.set(node.id, Math.max(horizontalGap, span));
-      return spanMemo.get(node.id);
+    visible.forEach((node) => { node.layoutOnGospelLine = followsGospelLine(node); });
+
+    function addContour(layout, row, minX, maxX) {
+      const current = layout.contours.get(row);
+      if (current) {
+        current.min = Math.min(current.min, minX);
+        current.max = Math.max(current.max, maxX);
+      } else {
+        layout.contours.set(row, { min: minX, max: maxX });
+      }
     }
 
-    const maxRow = Math.max(...visible.map((node) => node.visibleDepth));
+    function cloneLayout(layout, rowShift = 0, descendantDelay = 0) {
+      const clone = { entries: [], contours: new Map() };
+      layout.entries.forEach((entry) => {
+        clone.entries.push({
+          node: entry.node,
+          x: entry.x,
+          row: entry.row + rowShift + (entry.row > 0 ? descendantDelay : 0)
+        });
+      });
+      layout.contours.forEach((range, row) => {
+        const shiftedRow = row + rowShift + (row > 0 ? descendantDelay : 0);
+        addContour(clone, shiftedRow, range.min, range.max);
+      });
+      if (descendantDelay > 0) {
+        for (let row = rowShift + 1; row <= rowShift + descendantDelay; row += 1) {
+          addContour(clone, row, -edgeClearance, edgeClearance);
+        }
+      }
+      return clone;
+    }
+
+    function shiftLayout(layout, offset) {
+      if (!offset) return;
+      layout.entries.forEach((entry) => { entry.x += offset; });
+      layout.contours.forEach((range) => {
+        range.min += offset;
+        range.max += offset;
+      });
+    }
+
+    function mergeLayouts(target, source) {
+      source.entries.forEach((entry) => target.entries.push(entry));
+      source.contours.forEach((range, row) => addContour(target, row, range.min, range.max));
+      return target;
+    }
+
+    function touchingOffset(layout, placed, direction) {
+      let required = direction < 0 ? Infinity : -Infinity;
+      let sharedRow = false;
+      layout.contours.forEach((range, row) => {
+        const occupied = placed.contours.get(row);
+        if (!occupied) return;
+        sharedRow = true;
+        if (direction < 0) {
+          required = Math.min(required, occupied.min - horizontalClearance - range.max);
+        } else {
+          required = Math.max(required, occupied.max + horizontalClearance - range.min);
+        }
+      });
+      if (sharedRow) return required;
+      return direction * (NODE_WIDTH + horizontalClearance);
+    }
+
+    function findEntry(layout, node) {
+      return layout.entries.find((entry) => entry.node === node);
+    }
+
+    function packChildLayouts(children, childLayouts, anchorChild, outwardBias) {
+      if (!children.length) return { entries: [], contours: new Map() };
+      const anchorIndex = anchorChild ? children.indexOf(anchorChild) : -1;
+      let packed;
+      if (anchorChild) {
+        packed = childLayouts[anchorIndex];
+        for (let index = anchorIndex - 1; index >= 0; index -= 1) {
+          const layout = childLayouts[index];
+          shiftLayout(layout, touchingOffset(layout, packed, -1));
+          mergeLayouts(packed, layout);
+        }
+        for (let index = anchorIndex + 1; index < children.length; index += 1) {
+          const layout = childLayouts[index];
+          shiftLayout(layout, touchingOffset(layout, packed, 1));
+          mergeLayouts(packed, layout);
+        }
+      } else if (outwardBias < 0) {
+        packed = childLayouts.at(-1);
+        for (let index = childLayouts.length - 2; index >= 0; index -= 1) {
+          const layout = childLayouts[index];
+          shiftLayout(layout, touchingOffset(layout, packed, -1));
+          mergeLayouts(packed, layout);
+        }
+      } else {
+        packed = childLayouts[0];
+        for (let index = 1; index < childLayouts.length; index += 1) {
+          const layout = childLayouts[index];
+          shiftLayout(layout, touchingOffset(layout, packed, 1));
+          mergeLayouts(packed, layout);
+        }
+        if (!outwardBias) {
+          const firstCenter = findEntry(packed, children[0]).x;
+          const lastCenter = findEntry(packed, children.at(-1)).x;
+          shiftLayout(packed, -(firstCenter + lastCenter) / 2);
+        }
+      }
+      return packed;
+    }
+
+    function scoreLayout(layout, children, delay) {
+      const childCenters = children.map((child) => findEntry(layout, child).x);
+      const directSpan = childCenters.length > 1
+        ? Math.max(...childCenters) - Math.min(...childCenters)
+        : 0;
+      let minX = Infinity;
+      let maxX = -Infinity;
+      layout.contours.forEach((range) => {
+        minX = Math.min(minX, range.min);
+        maxX = Math.max(maxX, range.max);
+      });
+      return directSpan + (maxX - minX) * .015 + delay * MAINLINE_ROW_COST;
+    }
+
+    function composeLayout(node, children, rawChildLayouts, anchorChild, outwardBias, delay) {
+      const childLayouts = rawChildLayouts.map((layout, index) =>
+        cloneLayout(layout, 1, children[index] === anchorChild ? delay : 0)
+      );
+      const packed = packChildLayouts(children, childLayouts, anchorChild, outwardBias);
+      packed.entries.push({ node, x: 0, row: 0 });
+      addContour(packed, 0, -NODE_WIDTH / 2, NODE_WIDTH / 2);
+      return packed;
+    }
+
+    // 같은 행에서 실제로 맞닿는 윤곽만 비교한다. 메인 계보 카드는 다음 행에
+    // 그대로 두되, 가로폭이 충분히 줄어드는 경우에만 그 후손을 최대 네 행 늦춘다.
+    function packSubtree(node, outwardBias = 0) {
+      const children = childrenById.get(node.id);
+      const anchorChild = getAnchorChild(children);
+      const anchorIndex = anchorChild ? children.indexOf(anchorChild) : -1;
+      const rawChildLayouts = children.map((child, index) => {
+        let childBias = outwardBias;
+        if (anchorChild) childBias = index < anchorIndex ? -1 : index > anchorIndex ? 1 : 0;
+        return packSubtree(child, childBias);
+      });
+      const hasParallelGospelLine = children.some(
+        (child) => child !== anchorChild && followsGospelLine(child)
+      );
+      const hasBlockingDescendants = children.some(
+        (child) => child !== anchorChild
+          && !followsGospelLine(child)
+          && childrenById.get(child.id).length
+      );
+      const anchorHasDescendants = anchorChild && childrenById.get(anchorChild.id).length;
+      const maxDelay = anchorHasDescendants && hasBlockingDescendants && !hasParallelGospelLine
+        ? MAX_MAINLINE_DELAY
+        : 0;
+
+      let bestLayout = null;
+      let bestScore = Infinity;
+      for (let delay = 0; delay <= maxDelay; delay += 1) {
+        const candidate = composeLayout(
+          node, children, rawChildLayouts, anchorChild, outwardBias, delay
+        );
+        const score = scoreLayout(candidate, children, delay);
+        if (score < bestScore - .01) {
+          bestLayout = candidate;
+          bestScore = score;
+        }
+      }
+      return bestLayout;
+    }
+
+    const packedTree = packSubtree(data.root);
+    packedTree.entries.forEach((entry) => {
+      entry.node.layoutCenterX = entry.x;
+      entry.node.layoutRow = entry.row;
+    });
+
+    const maxRow = Math.max(...visible.map((node) => node.layoutRow));
     const rowDensity = Array.from({ length: maxRow + 1 }, () => 0);
-    visible.forEach((node) => { rowDensity[node.visibleDepth] += 1; });
+    const rowHeights = Array.from({ length: maxRow + 1 }, () => NODE_HEIGHT);
+    visible.forEach((node) => {
+      rowDensity[node.layoutRow] += 1;
+      rowHeights[node.layoutRow] = Math.max(rowHeights[node.layoutRow], getFamilyHeight(node));
+    });
     const rowOffsets = [0];
     for (let row = 1; row <= maxRow; row += 1) {
+      const density = Math.max(rowDensity[row - 1], rowDensity[row]);
       const densityPadding = denseLayout
-        ? Math.min(MAX_DENSE_ROW_PADDING, Math.max(0, rowDensity[row - 1] - 6) * 7)
+        ? Math.min(MAX_DENSE_ROW_PADDING, Math.max(0, density - 10) * 2)
         : 0;
-      rowOffsets[row] = rowOffsets[row - 1] + verticalGap + densityPadding;
+      const verticalStep = Math.max(Y_GAP, rowHeights[row - 1] + (denseLayout ? 84 : 76));
+      rowOffsets[row] = rowOffsets[row - 1] + verticalStep + densityPadding;
     }
 
-    function placeSubtree(node, left) {
-      const children = childrenById.get(node.id);
-      let centerX;
-      if (!children.length) {
-        centerX = left + measureSubtree(node) / 2;
-      } else {
-        let cursor = left;
-        children.forEach((child) => {
-          placeSubtree(child, cursor);
-          cursor += measureSubtree(child) + subtreeGap;
-        });
-        const anchorChild = getAnchorChild(children);
-        centerX = anchorChild
-          ? anchorChild.layoutCenterX
-          : (children[0].layoutCenterX + children.at(-1).layoutCenterX) / 2;
-      }
-      node.layoutCenterX = centerX;
-      node.layoutX = centerX - NODE_WIDTH / 2;
-      node.layoutRow = node.visibleDepth;
-      node.layoutY = rowOffsets[node.visibleDepth];
-    }
-
-    measureSubtree(data.root);
-    placeSubtree(data.root, 0);
+    visible.forEach((node) => {
+      node.layoutX = node.layoutCenterX - NODE_WIDTH / 2;
+      node.layoutY = rowOffsets[node.layoutRow];
+      node.layoutRowBottom = rowOffsets[node.layoutRow] + rowHeights[node.layoutRow];
+    });
 
     const xs = visible.map((node) => node.layoutX);
     const minX = Math.min(...xs) - MARGIN;
@@ -170,6 +323,7 @@
     visible.forEach((node) => {
       node.layoutX -= minX;
       node.layoutY -= minY;
+      node.layoutRowBottom -= minY;
     });
     layoutBounds = { width: maxX - minX, height: maxY - minY, minX: 0, minY: 0 };
   }
@@ -194,8 +348,7 @@
     const startY = source.layoutY + getFamilyHeight(source);
     const endX = target.layoutX + NODE_WIDTH / 2;
     const endY = target.layoutY;
-    if (route.trunkX === null) return `M ${startX} ${startY} V ${route.busY} H ${endX} V ${endY}`;
-    return `M ${startX} ${startY} V ${route.firstBusY} H ${route.trunkX} V ${route.busY} H ${endX} V ${endY}`;
+    return `M ${startX} ${startY} V ${route.busY} H ${endX} V ${endY}`;
   }
 
   function makeLinkPaths(links) {
@@ -209,32 +362,20 @@
     linksBySource.forEach((familyLinks) => {
       const { source } = familyLinks[0];
       const startY = source.layoutY + getFamilyHeight(source);
-      const rows = new Map();
-      familyLinks.forEach((link) => {
-        if (!rows.has(link.target.layoutRow)) rows.set(link.target.layoutRow, []);
-        rows.get(link.target.layoutRow).push(link);
-      });
-      const orderedRows = Array.from(rows.values()).sort((a, b) => a[0].target.layoutY - b[0].target.layoutY);
-      const allCenters = familyLinks.map(({ target }) => target.layoutX + NODE_WIDTH / 2);
-      const laneOffset = DENSE_X_GAP * .42;
-      const leftLane = Math.min(...allCenters) - laneOffset;
-      const rightLane = Math.max(...allCenters) + laneOffset;
-      const nearestChildY = orderedRows[0][0].target.layoutY;
-      const firstBusY = startY + Math.min(86, Math.max(28, nearestChildY - startY) * .36);
-
-      orderedRows.forEach((rowLinks, rowIndex) => {
-        const childY = rowLinks[0].target.layoutY;
-        const rowBusY = rowIndex === 0
-          ? firstBusY
-          : childY - Math.min(86, Math.max(42, (childY - startY) * .12));
-        const trunkX = rowIndex === 0 ? null : (rowIndex % 2 ? rightLane : leftLane);
-        rowLinks.forEach(({ target }) => {
-          routeByTarget.set(target.id, { busY: rowBusY, firstBusY, trunkX });
-        });
+      const childY = Math.min(...familyLinks.map(({ target }) => target.layoutY));
+      const earliestBusY = source.layoutRowBottom + 24;
+      const latestBusY = childY - 28;
+      const available = Math.max(36, childY - source.layoutRowBottom);
+      const preferredBusY = childY - Math.min(72, Math.max(36, available * .2));
+      const busY = earliestBusY <= latestBusY
+        ? Math.min(latestBusY, Math.max(earliestBusY, preferredBusY))
+        : (startY + childY) / 2;
+      familyLinks.forEach(({ target }) => {
+        routeByTarget.set(target.id, { busY });
       });
     });
     links.forEach((link) => {
-      const promise = link.target.kind === 'promise';
+      const promise = link.target.layoutOnGospelLine;
       const highlighted = query && matches.has(link.source.id) && matches.has(link.target.id);
       const state = query ? (highlighted ? 'highlighted' : 'dimmed') : 'normal';
       const key = `${promise ? 'promise' : 'regular'}-${state}`;
