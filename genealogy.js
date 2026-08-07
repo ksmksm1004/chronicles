@@ -44,6 +44,9 @@
   const SVG_NS = 'http://www.w3.org/2000/svg';
   const NODE_WIDTH = 148;
   const NODE_HEIGHT = 43;
+  const SPOUSE_WIDTH = 116;
+  const SPOUSE_HEIGHT = 34;
+  const SPOUSE_GAP = 18;
   const Y_GAP = 164;
   const DENSE_NODE_THRESHOLD = 180;
   const MARGIN = 120;
@@ -64,9 +67,35 @@
   }
 
   function getFamilyHeight(node) {
-    if (!node.spouses.length) return NODE_HEIGHT;
-    const spouseRows = Math.min(2, node.spouses.length);
-    return NODE_HEIGHT + 12 + spouseRows * 28 + (node.spouses.length > 2 ? 18 : 0);
+    return NODE_HEIGHT;
+  }
+
+  function getSpouseX(node) {
+    return node.layoutSpouseSide < 0
+      ? -(SPOUSE_GAP + SPOUSE_WIDTH)
+      : NODE_WIDTH + SPOUSE_GAP;
+  }
+
+  function getFamilyHorizontalBounds(node) {
+    if (!node.spouses.length) return { min: 0, max: NODE_WIDTH };
+    const spouseX = getSpouseX(node);
+    return {
+      min: Math.min(0, spouseX),
+      max: Math.max(NODE_WIDTH, spouseX + SPOUSE_WIDTH)
+    };
+  }
+
+  function getFamilyContour(node) {
+    const bounds = getFamilyHorizontalBounds(node);
+    return {
+      min: bounds.min - NODE_WIDTH / 2,
+      max: bounds.max - NODE_WIDTH / 2
+    };
+  }
+
+  function getSpouseSummary(node) {
+    if (node.spouses.length === 1) return node.spouses[0];
+    return `${node.spouses[0]} 외 ${node.spouses.length - 1}명`;
   }
 
   function isVisibleChild(node) {
@@ -243,19 +272,23 @@
       );
       const packed = packChildLayouts(children, childLayouts, anchorChild, outwardBias);
       packed.entries.push({ node, x: 0, row: 0 });
-      addContour(packed, 0, -NODE_WIDTH / 2, NODE_WIDTH / 2);
+      const familyContour = getFamilyContour(node);
+      addContour(packed, 0, familyContour.min, familyContour.max);
       return packed;
     }
 
     // 같은 행에서 실제로 맞닿는 윤곽만 비교한다. 메인 계보 카드는 다음 행에
     // 그대로 두되, 가로폭이 충분히 줄어드는 경우에만 그 후손을 최대 네 행 늦춘다.
     function packSubtree(node, outwardBias = 0) {
+      node.layoutSpouseSide = outwardBias < 0 ? -1 : 1;
       const children = childrenById.get(node.id);
       const anchorChild = getAnchorChild(children);
       const anchorIndex = anchorChild ? children.indexOf(anchorChild) : -1;
       const rawChildLayouts = children.map((child, index) => {
         let childBias = outwardBias;
-        if (anchorChild) childBias = index < anchorIndex ? -1 : index > anchorIndex ? 1 : 0;
+        if (anchorChild) {
+          childBias = index < anchorIndex ? -1 : index > anchorIndex ? 1 : outwardBias;
+        }
         return packSubtree(child, childBias);
       });
       const hasParallelGospelLine = children.some(
@@ -315,9 +348,12 @@
       node.layoutRowBottom = rowOffsets[node.layoutRow] + rowHeights[node.layoutRow];
     });
 
-    const xs = visible.map((node) => node.layoutX);
-    const minX = Math.min(...xs) - MARGIN;
-    const maxX = Math.max(...xs) + NODE_WIDTH + MARGIN;
+    const minX = Math.min(...visible.map((node) =>
+      node.layoutX + getFamilyHorizontalBounds(node).min
+    )) - MARGIN;
+    const maxX = Math.max(...visible.map((node) =>
+      node.layoutX + getFamilyHorizontalBounds(node).max
+    )) + MARGIN;
     const minY = -MARGIN / 2;
     const maxY = Math.max(...visible.map((node) => node.layoutY + getFamilyHeight(node))) + MARGIN;
     visible.forEach((node) => {
@@ -345,7 +381,7 @@
 
   function makeLinkSegment({ source, target }, route) {
     const startX = source.layoutX + NODE_WIDTH / 2;
-    const startY = source.layoutY + getFamilyHeight(source);
+    const startY = source.layoutY + NODE_HEIGHT;
     const endX = target.layoutX + NODE_WIDTH / 2;
     const endY = target.layoutY;
     return `M ${startX} ${startY} V ${route.busY} H ${endX} V ${endY}`;
@@ -361,7 +397,7 @@
     });
     linksBySource.forEach((familyLinks) => {
       const { source } = familyLinks[0];
-      const startY = source.layoutY + getFamilyHeight(source);
+      const startY = source.layoutY + NODE_HEIGHT;
       const childY = Math.min(...familyLinks.map(({ target }) => target.layoutY));
       const earliestBusY = source.layoutRowBottom + 24;
       const latestBusY = childY - 28;
@@ -391,6 +427,7 @@
   }
 
   function makeNode(node) {
+    const spouseDescription = node.spouses.length ? `. 배우자 ${node.spouses.join(', ')}` : '';
     const group = svgElement('g', {
       class: 'genealogy-node',
       transform: `translate(${node.layoutX} ${node.layoutY})`,
@@ -398,7 +435,7 @@
       role: 'button',
       'data-id': node.id,
       'data-kind': node.kind || 'nation',
-      'aria-label': `${node.name}. ${getNodeLabel(node)}${node.children.length ? '. 눌러서 후손 가지 열기 또는 닫기' : ''}`
+      'aria-label': `${node.name}. ${getNodeLabel(node)}${spouseDescription}${node.children.length ? '. 눌러서 후손 가지 열기 또는 닫기' : ''}`
     });
     if (selectedId === node.id) group.classList.add('selected');
     if (node.group) group.classList.add('group');
@@ -413,29 +450,64 @@
     meta.textContent = truncate(getNodeLabel(node), 23);
     group.appendChild(meta);
 
+    if (node.spouses.length) {
+      const spouseX = getSpouseX(node);
+      const spouseY = (NODE_HEIGHT - SPOUSE_HEIGHT) / 2;
+      const spouseOnLeft = node.layoutSpouseSide < 0;
+      const nodeEdgeX = spouseOnLeft ? 0 : NODE_WIDTH;
+      const jointX = spouseOnLeft ? -SPOUSE_GAP / 2 : NODE_WIDTH + SPOUSE_GAP / 2;
+      const spouseEdgeX = spouseOnLeft ? spouseX + SPOUSE_WIDTH : spouseX;
+      const spouseCenterY = spouseY + SPOUSE_HEIGHT / 2;
+      const connectorY = NODE_HEIGHT - 7;
+      const spouseMatched = query && node.spouses.some((spouse) =>
+        spouse.toLocaleLowerCase('ko-KR').includes(query)
+      );
+      const spouseGroup = svgElement('g', {
+        class: `spouse-cluster${spouseMatched ? ' search-match' : ''}`,
+        'aria-hidden': 'true'
+      });
+      spouseGroup.appendChild(svgElement('path', {
+        class: 'spouse-link',
+        d: `M ${nodeEdgeX} ${connectorY} H ${jointX} V ${spouseCenterY} H ${spouseEdgeX}`
+      }));
+      spouseGroup.appendChild(svgElement('rect', {
+        class: 'spouse-card',
+        x: spouseX,
+        y: spouseY,
+        width: SPOUSE_WIDTH,
+        height: SPOUSE_HEIGHT,
+        rx: SPOUSE_HEIGHT / 2
+      }));
+      const spouseRole = svgElement('text', {
+        class: 'spouse-role',
+        x: spouseX + 11,
+        y: spouseY + 11
+      });
+      spouseRole.textContent = node.spouses.length > 1 ? `배우자 ${node.spouses.length}명` : '배우자';
+      spouseGroup.appendChild(spouseRole);
+      const spouseName = svgElement('text', {
+        class: 'spouse-name',
+        x: spouseX + 11,
+        y: spouseY + 26
+      });
+      spouseName.textContent = truncate(getSpouseSummary(node), 15);
+      spouseGroup.appendChild(spouseName);
+      const spouseTitle = svgElement('title');
+      spouseTitle.textContent = `배우자: ${node.spouses.join(', ')}`;
+      spouseGroup.appendChild(spouseTitle);
+      spouseGroup.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (!suppressClick) selectNode(node);
+      });
+      group.appendChild(spouseGroup);
+    }
+
     if (node.children.length) {
       const toggle = svgElement('g', { transform: `translate(${NODE_WIDTH - 1} ${NODE_HEIGHT / 2})` });
       toggle.appendChild(svgElement('circle', { class: 'node-toggle-ring', r: 8.5 }));
       toggle.appendChild(svgElement('path', { class: 'node-toggle-symbol', d: 'M -3.5 0 H 3.5' }));
       if (!expanded.has(node.id)) toggle.appendChild(svgElement('path', { class: 'node-toggle-symbol', d: 'M 0 -3.5 V 3.5' }));
       group.appendChild(toggle);
-    }
-
-    if (node.spouses.length) {
-      node.spouses.slice(0, 2).forEach((spouse, index) => {
-        const x = 10;
-        const y = NODE_HEIGHT + 10 + index * 28;
-        group.appendChild(svgElement('line', { class: 'spouse-link', x1: NODE_WIDTH / 2, y1: index ? y - 4 : NODE_HEIGHT, x2: NODE_WIDTH / 2, y2: y }));
-        group.appendChild(svgElement('rect', { class: 'spouse-pill', x, y, width: NODE_WIDTH - 20, height: 24, rx: 12 }));
-        const spouseText = svgElement('text', { class: 'spouse-name', x: NODE_WIDTH / 2, y: y + 15.5, 'text-anchor': 'middle' });
-        spouseText.textContent = truncate(spouse, 18);
-        group.appendChild(spouseText);
-      });
-      if (node.spouses.length > 2) {
-        const more = svgElement('text', { class: 'node-meta', x: NODE_WIDTH / 2, y: NODE_HEIGHT + 79, 'text-anchor': 'middle' });
-        more.textContent = `외 ${node.spouses.length - 2}명`;
-        group.appendChild(more);
-      }
     }
 
     group.addEventListener('click', (event) => {
