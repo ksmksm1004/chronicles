@@ -747,24 +747,12 @@
     group.addEventListener('click', (event) => {
       event.stopPropagation();
       if (suppressClick) return;
-      activePreset = null;
-      selectNode(node);
-      if (node.children.length) {
-        if (expanded.has(node.id)) expanded.delete(node.id);
-        else expanded.add(node.id);
-        render();
-      }
+      toggleNode(node);
     });
     group.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' && event.key !== ' ') return;
       event.preventDefault();
-      activePreset = null;
-      selectNode(node);
-      if (node.children.length) {
-        if (expanded.has(node.id)) expanded.delete(node.id);
-        else expanded.add(node.id);
-        render();
-      }
+      toggleNode(node);
     });
     return group;
   }
@@ -784,9 +772,42 @@
     });
   }
 
-  function render() {
+  function captureNodeAnchor(node) {
+    const centerX = node.layoutX + NODE_WIDTH / 2;
+    const centerY = node.layoutY + NODE_HEIGHT / 2;
+    return {
+      node,
+      screenX: transform.x + centerX * transform.scale,
+      screenY: transform.y + centerY * transform.scale
+    };
+  }
+
+  // 가지가 새로 왼쪽까지 뻗으면 layoutTree의 원점이 달라질 수 있다.
+  // 토글한 카드의 화면 좌표를 복원해 열고 닫을 때 도면 전체가 튀지 않게 한다.
+  function restoreNodeAnchor(anchor) {
+    if (!anchor?.node || !Number.isFinite(anchor.node.layoutX) || !Number.isFinite(anchor.node.layoutY)) return;
+    const centerX = anchor.node.layoutX + NODE_WIDTH / 2;
+    const centerY = anchor.node.layoutY + NODE_HEIGHT / 2;
+    transform.x = anchor.screenX - centerX * transform.scale;
+    transform.y = anchor.screenY - centerY * transform.scale;
+  }
+
+  function toggleNode(node) {
+    activePreset = null;
+    selectNode(node);
+    if (!node.children.length) return;
+    cancelSmoothZoom();
+    viewport.style.transition = '';
+    const anchor = captureNodeAnchor(node);
+    if (expanded.has(node.id)) expanded.delete(node.id);
+    else expanded.add(node.id);
+    render(anchor);
+  }
+
+  function render(anchor = null) {
     const { visible, links } = collectVisible(data.root);
     layoutTree(visible);
+    restoreNodeAnchor(anchor);
     viewport.dataset.density = visible.length > 300 ? 'high' : 'normal';
     linksLayer.replaceChildren(...makeLinkPaths(links), ...makeMotherGuideElements(links));
     nodesLayer.replaceChildren(...visible.map(makeNode));
