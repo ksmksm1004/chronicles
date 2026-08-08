@@ -32,7 +32,7 @@ body {
   background: radial-gradient(circle at top left, #142a54 0%, var(--bg) 48%);
   color: var(--ink);
 }
-.hero { padding: 2rem 1.2rem 1rem; max-width: 1200px; margin: 0 auto; }
+.hero { width: min(1720px, 96vw); padding: 2rem 0 1rem; margin: 0 auto; }
 .hero h1 { margin: 0 0 0.8rem; font-size: clamp(1.5rem, 2vw, 2.2rem); }
 .hero p { margin: 0; max-width: 90ch; line-height: 1.6; color: var(--muted); }
 .page-tabs {
@@ -687,6 +687,12 @@ body {
   margin-bottom: .55rem;
 }
 
+.genealogy-intro > p:not(.eyebrow) {
+  max-width: none;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
 .genealogy-legend {
   color: #bcc9e6;
 }
@@ -1260,7 +1266,7 @@ body {
 }
 
 @media (max-width: 760px) {
-  .page-tabs { display: flex; width: 100%; overflow-x: auto; }
+  .page-tabs { display: inline-flex; width: auto; max-width: 100%; overflow-x: auto; }
   .page-tab { flex: 0 0 auto; }
 
   .genealogy-toolbar {
