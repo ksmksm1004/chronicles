@@ -966,6 +966,16 @@ body {
   pointer-events: none;
 }
 
+.spouse-name.multi { font-size: 7.8px; }
+
+.spouse-swatch {
+  fill: var(--mother-color);
+  stroke: #071426;
+  stroke-width: .8;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
 .genealogy-node:hover .spouse-card,
 .genealogy-node:focus-visible .spouse-card,
 .genealogy-node.selected .spouse-card {
@@ -977,6 +987,81 @@ body {
   fill: #234341;
   stroke: #ffe18c;
   stroke-width: 2;
+}
+
+.mother-guide-group {
+  pointer-events: none;
+  transition: opacity .16s ease;
+}
+
+.mother-guide-drop,
+.mother-guide-bracket,
+.mother-promise-tip {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.mother-guide-drop {
+  stroke: var(--mother-color);
+  stroke-width: 3.4;
+}
+
+.mother-guide-bracket {
+  stroke: var(--mother-color);
+  stroke-width: 1.45;
+}
+
+.mother-promise-tip {
+  stroke: #f2c34b;
+  stroke-width: 1.25;
+}
+
+.mother-guide-group.unknown .mother-guide-drop {
+  stroke-dasharray: 2.5 2.5;
+  stroke-width: 2.4;
+}
+
+.mother-guide-group.dimmed { opacity: .1; }
+.mother-guide-group.highlighted :is(.mother-guide-drop, .mother-guide-bracket) { stroke-width: 4; }
+
+.mother-guide-label rect {
+  fill: #08162a;
+  stroke: var(--mother-color);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.mother-guide-label text {
+  fill: #eaf8ff;
+  font-size: 7.5px;
+  font-weight: 850;
+  letter-spacing: .01em;
+}
+
+.mother-badge rect {
+  fill: color-mix(in srgb, var(--mother-color) 18%, #0b1729);
+  stroke: var(--mother-color);
+  stroke-width: .9;
+  vector-effect: non-scaling-stroke;
+}
+
+.mother-badge text {
+  fill: #edfaff;
+  font-size: 7px;
+  font-weight: 850;
+  pointer-events: none;
+}
+
+.mother-badge.unknown rect { stroke-dasharray: 2.5 2; }
+
+.mother-pin {
+  fill: var(--mother-color);
+  stroke: #071426;
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
 }
 
 .route-label rect {
@@ -1012,6 +1097,10 @@ body {
   .spouse-link,
   .spouse-role,
   .spouse-name,
+  .spouse-swatch,
+  .mother-guide-group,
+  .mother-badge,
+  .mother-pin,
   .route-label
 ) {
   display: none;
@@ -1030,6 +1119,9 @@ body {
   .node-meta,
   .spouse-role,
   .spouse-name,
+  .spouse-swatch,
+  .mother-guide-label,
+  .mother-badge,
   .route-label
 ) {
   display: none;
@@ -1041,6 +1133,8 @@ body {
   right: 18px;
   z-index: 3;
   width: min(310px, calc(100% - 36px));
+  max-height: calc(100% - 36px);
+  overflow: auto;
   padding: 1rem;
   border: 1px solid rgba(153,178,226,.24);
   border-radius: 12px;

@@ -18,7 +18,11 @@
   const cainLine = line('에녹>이랏>므후야엘>므드사엘>라멕', '창 4:17–24', { kind: 'nation' });
   cain.children.push(cainLine.root);
   cainLine.nodes.at(-1).spouses = ['아다', '씰라'];
-  cainLine.nodes.at(-1).children.push(...people('야발|유발|두발가인|나아마', '창 4:19–22', { kind: 'nation' }));
+  cainLine.nodes.at(-1).children.push(
+    ...people('야발|유발', '창 4:19–22', { kind: 'nation', mother: '아다' }),
+    person('두발가인', '창 4:19–22', [], { kind: 'nation', mother: '씰라' }),
+    person('나아마', '창 4:19–22', [], { kind: 'woman', gender: 'female', mother: '씰라' })
+  );
   adam.children.push(person('아벨', '창 4:2–8', [], { kind: 'nation' }), cain);
 
   const sethLine = line('셋>에노스>게난>마할랄렐>야렛>에녹>므두셀라>라멕>노아', '창 5장 · 대상 1:1–4', { kind: 'promise' });
@@ -57,7 +61,11 @@
   const abraham = person('아브람 (아브라함)', '창 11:26–25장 · 대상 1:27–34', [], {
     spouses: ['사래 (사라)', '하갈', '그두라'], kind: 'promise', note: '언약의 조상. 이스마엘과 이삭, 그두라의 아들들의 아버지입니다.'
   });
-  const nahor = person('나홀', '창 11:26–29 · 22:20–24', people('우스|부스|그므엘|게셋|하소|빌다스|이들랍|브두엘|데바|가함|다하스|마아가', '창 22:20–24', { kind: 'nation' }), { spouses: ['밀가', '르우마'], kind: 'nation' });
+  const nahor = person('나홀', '창 11:26–29 · 22:20–24', [], { spouses: ['밀가', '르우마'], kind: 'nation' });
+  nahor.children.push(
+    ...people('우스|부스|그므엘|게셋|하소|빌다스|이들랍|브두엘', '창 22:20–24', { kind: 'nation', mother: '밀가' }),
+    ...people('데바|가함|다하스|마아가', '창 22:20–24', { kind: 'nation', mother: '르우마' })
+  );
   const haran = person('하란', '창 11:26–31', people('롯|밀가|이스가', '창 11:27–29', { kind: 'nation' }), { kind: 'nation' });
   terah.children.push(abraham, nahor, haran);
 
@@ -71,10 +79,13 @@
   const esau = person('에서 (에돔)', '창 25–36장 · 대상 1:34–54', [], { spouses: ['아다', '오홀리바마', '바스맛'], kind: 'nation' });
   const jacob = person('야곱 (이스라엘)', '창 25–50장 · 대상 2:1–2', [], { spouses: ['레아', '라헬', '빌하', '실바'], kind: 'promise' });
   isaac.children.push(jacob, esau);
-  const eliphaz = person('엘리바스', '창 36:4,10–12 · 대상 1:35–36', people('데만|오말|스비|가담|그나스|딤나|아말렉', '창 36:11–12 · 대상 1:36', { kind: 'nation' }), { kind: 'nation', mother: '아다' });
+  const eliphaz = person('엘리바스', '창 36:4,10–12 · 대상 1:35–36', [
+    ...people('데만|오말|스비|가담|그나스', '창 36:11–12 · 대상 1:36', { kind: 'nation', motherUnknown: true }),
+    person('아말렉', '창 36:12 · 대상 1:36', [], { kind: 'nation', mother: '딤나' })
+  ], { spouses: ['딤나 (첩)'], kind: 'nation', mother: '아다' });
   const reuel = person('르우엘', '창 36:4,13 · 대상 1:35,37', people('나핫|세라|삼마|미사', '창 36:13 · 대상 1:37', { kind: 'nation' }), { kind: 'nation', mother: '바스맛' });
   const seir = person('세일', '창 36:20–30 · 대상 1:38–42', [], { kind: 'nation' });
-  const lotan = person('로단', '대상 1:38–39', people('호리|호맘|딤나', '대상 1:39', { kind: 'nation' }), { kind: 'nation' });
+  const lotan = person('로단', '대상 1:38–39', people('호리|호맘', '대상 1:39', { kind: 'nation' }), { kind: 'nation' });
   const anah = person('아나', '대상 1:38,40–41', [person('디손', '대상 1:41', people('하므란|에스반|이드란|그란', '대상 1:41', { kind: 'nation' }), { kind: 'nation' })], { kind: 'nation' });
   const dishon = person('디손', '대상 1:38,41', people('암람|에스반|이드란|그란', '대상 1:41', { kind: 'nation' }), { kind: 'nation' });
   seir.children.push(lotan, person('소발', '대상 1:38,40', people('알랸|마나핫|에발|스비|오남', '대상 1:40', { kind: 'nation' }), { kind: 'nation' }), person('시브온', '대상 1:38,40', people('아야|아나', '대상 1:40', { kind: 'nation' }), { kind: 'nation' }), anah, dishon, person('에셀', '대상 1:38,42', people('빌한|사아완|야아간', '대상 1:42', { kind: 'nation' }), { kind: 'nation' }), person('디산', '대상 1:38,42', people('우스|아란', '대상 1:42', { kind: 'nation' }), { kind: 'nation' }));
@@ -129,13 +140,13 @@
   const perez = person('베레스', '창 38장 · 대상 2:4–5 · 마 1:3', [], { mother: '다말', kind: 'promise' });
   const zerah = person('세라', '창 38장 · 대상 2:4,6', people('시므리|에단|헤만|갈골|다라', '대상 2:6', { kind: 'tribe' }), { mother: '다말', kind: 'tribe' });
   judah.children.push(...people('엘|오난|셀라', '대상 2:3–4', { kind: 'tribe', mother: '수아의 딸' }), perez, zerah);
-  const hezron = person('헤스론', '대상 2:5,9 · 마 1:3', [], { kind: 'promise' });
+  const hezron = person('헤스론', '대상 2:5,9,21,24 · 마 1:3', [], { spouses: ['마길의 딸', '아비야'], kind: 'promise' });
   perez.children.push(hezron, person('하물', '대상 2:5', [], { kind: 'tribe' }));
-  const jerahmeel = person('여라므엘', '대상 2:9,25–41', [], { spouses: ['아다라'], kind: 'tribe' });
-  const ram = person('람', '대상 2:9–10 · 마 1:3–4', [], { kind: 'promise' });
-  const caleb = person('글루배 (갈렙)', '대상 2:9,18–24,42–50', [], { spouses: ['아수바', '여리옷', '에브랏'], kind: 'tribe' });
+  const jerahmeel = person('여라므엘', '대상 2:9,25–41', [], { spouses: ['이름이 기록되지 않은 첫 아내', '아다라'], kind: 'tribe', motherUnknown: true });
+  const ram = person('람', '대상 2:9–10 · 마 1:3–4', [], { kind: 'promise', motherUnknown: true });
+  const caleb = person('글루배 (갈렙)', '대상 2:9,18–24,42–50', [], { spouses: ['아수바', '여리옷', '에브랏'], kind: 'tribe', motherUnknown: true });
   hezron.children.push(jerahmeel, ram, caleb, person('스굽', '대상 2:21–22', [person('야일', '대상 2:22–23', [], { kind: 'tribe' })], { mother: '마길의 딸', kind: 'tribe' }), person('아스훌', '대상 2:24', [], { mother: '아비야', kind: 'tribe' }));
-  jerahmeel.children.push(...people('람|그나|오렌|오셈', '대상 2:25', { kind: 'tribe' }), person('아히야', '대상 2:25', [], { kind: 'woman', gender: 'female' }), person('오남', '대상 2:26,28', people('삼매|야다', '대상 2:28', { kind: 'tribe' }), { mother: '아다라', kind: 'tribe' }));
+  jerahmeel.children.push(...people('람|그나|오렌|오셈', '대상 2:25', { kind: 'tribe', mother: '이름이 기록되지 않은 첫 아내' }), person('아히야', '대상 2:25', [], { kind: 'tribe', mother: '이름이 기록되지 않은 첫 아내' }), person('오남', '대상 2:26,28', people('삼매|야다', '대상 2:28', { kind: 'tribe' }), { mother: '아다라', kind: 'tribe' }));
   const jerahmeelRam = jerahmeel.children[0];
   const maaz = person('마아스', '대상 2:27', [], { kind: 'tribe' });
   jerahmeelRam.children.push(maaz, ...people('야민|에겔', '대상 2:27', { kind: 'tribe' }));
@@ -153,7 +164,10 @@
   const jephunnehCaleb = person('여분네의 아들 갈렙', '대상 4:15', people('이루|엘라|나암', '대상 4:15', { kind: 'tribe' }), { kind: 'tribe' });
   const jehallelel = person('여할렐렐', '대상 4:16', people('십|시바|디리아|아사렐', '대상 4:16', { kind: 'tribe' }), { kind: 'tribe' });
   const ezrah = person('에스라', '대상 4:17–18', [], { kind: 'tribe' });
-  const mered = person('메렛', '대상 4:17–18', people('예렛|헤벨|여구디엘|미리암|삼매|이스바', '대상 4:17–18', { kind: 'tribe' }), { spouses: ['바로의 딸 비디아', '유다 여인인 아내'], kind: 'tribe' });
+  const mered = person('메렛', '대상 4:17–18', [
+    ...people('예렛|헤벨|여구디엘', '대상 4:17–18', { kind: 'tribe', mother: '유다 여인인 아내' }),
+    ...people('미리암|삼매|이스바', '대상 4:17–18', { kind: 'tribe', mother: '바로의 딸 비디아' })
+  ], { spouses: ['바로의 딸 비디아', '유다 여인인 아내'], kind: 'tribe' });
   ezrah.children.push(...people('예델|에벨|얄론', '대상 4:17', { kind: 'tribe' }), mered);
   const hodiah = person('호디야', '대상 4:19', people('그일라|에스드모아', '대상 4:19', { kind: 'tribe' }), { spouses: ['나함의 누이'], kind: 'tribe' });
   const shimon = person('시몬', '대상 4:20', people('암논|린나|벤하난|딜론', '대상 4:20', { kind: 'tribe' }), { kind: 'tribe' });
@@ -169,10 +183,24 @@
   jesse.children.push(person('스루야', '대상 2:16', people('아비새|요압|아사헬', '대상 2:16', { kind: 'tribe' }), { kind: 'woman', gender: 'female' }), person('아비가일', '대상 2:16–17', [person('아마사', '대상 2:17', [], { father: '이드라', kind: 'tribe' })], { kind: 'woman', gender: 'female' }));
   david.spouses = ['아히노암', '아비가일', '마아가', '학깃', '아비달', '에글라', '밧세바'];
   david.note = '마태복음은 솔로몬 계열을, 누가복음은 나단 계열을 통해 예수님의 계보를 기록합니다.';
-  david.children.push(...people('암논|다니엘 (길르압)|압살롬|아도니야|스바댜|이드르암', '대상 3:1–3', { kind: 'tribe' }));
+  david.children.push(
+    person('암논', '대상 3:1', [], { kind: 'tribe', mother: '아히노암' }),
+    person('다니엘 (길르압)', '대상 3:1', [], { kind: 'tribe', mother: '아비가일' }),
+    person('압살롬', '대상 3:2', [], { kind: 'tribe', mother: '마아가' }),
+    person('아도니야', '대상 3:2', [], { kind: 'tribe', mother: '학깃' }),
+    person('스바댜', '대상 3:3', [], { kind: 'tribe', mother: '아비달' }),
+    person('이드르암', '대상 3:3', [], { kind: 'tribe', mother: '에글라' })
+  );
   const nathan = person('나단', '대상 3:5 · 눅 3:31', [], { mother: '밧세바', kind: 'promise', route: 'luke' });
   const solomon = person('솔로몬', '대상 3:5 · 마 1:6', [], { spouses: ['나아마'], mother: '밧세바', kind: 'promise', route: 'matthew' });
-  david.children.push(person('시므아', '대상 3:5', [], { mother: '밧세바', kind: 'tribe' }), person('소밥', '대상 3:5', [], { mother: '밧세바', kind: 'tribe' }), nathan, solomon, ...people('입할|엘리사마|엘리벨렛|노가|네벡|야비아|엘리사마|엘랴다|엘리벨렛', '대상 3:6–8', { kind: 'tribe' }), person('다말', '대상 3:9', [], { kind: 'woman', gender: 'female' }));
+  david.children.push(
+    person('시므아', '대상 3:5', [], { mother: '밧세바', kind: 'tribe' }),
+    person('소밥', '대상 3:5', [], { mother: '밧세바', kind: 'tribe' }),
+    nathan,
+    solomon,
+    ...people('입할|엘리사마|엘리벨렛|노가|네벡|야비아|엘리사마|엘랴다|엘리벨렛', '대상 3:6–8', { kind: 'tribe', motherUnknown: true }),
+    person('다말', '대상 3:9', [], { kind: 'woman', gender: 'female', motherUnknown: true })
+  );
 
   const matthew = line('르호보암>아비야>아사>여호사밧>요람>웃시야>요담>아하스>히스기야>므낫세>아몬>요시야>여고냐>스알디엘>스룹바벨>아비훗>엘리아김>아소르>사독>아킴>엘리웃>엘르아살>맛단>야곱>요셉>예수 그리스도', '대상 3:10–19 · 마 1:7–16', { kind: 'promise', route: 'matthew' });
   solomon.children.push(matthew.root);

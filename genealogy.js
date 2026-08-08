@@ -47,6 +47,9 @@
   const SPOUSE_WIDTH = 116;
   const SPOUSE_HEIGHT = 34;
   const SPOUSE_GAP = 18;
+  const MOTHER_COLORS = ['#63d7cd', '#ef9a78', '#ad91f2', '#e0b85e', '#df83bb', '#91cf78', '#72b5ea'];
+  const MOTHER_UNKNOWN_COLOR = '#8d9ab0';
+  const MOTHER_LABEL_HEIGHT = 16;
   const Y_GAP = 164;
   const DENSE_NODE_THRESHOLD = 180;
   const MARGIN = 120;
@@ -93,9 +96,84 @@
     };
   }
 
+  function getRelationDisplayName(value, compact = false) {
+    return value
+      .replace('이름이 기록되지 않은 첫 아내', compact ? '첫 아내(미상)' : '첫 아내(이름 미기록)')
+      .replace('이름이 기록되지 않은 아내', compact ? '이름 미기록' : '이름 미기록 아내')
+      .replace('바로의 딸 비디아', '비디아')
+      .replace('유다 여인인 아내', '유다 여인')
+      .replace(/\s+\(/g, '(');
+  }
+
   function getSpouseSummary(node) {
-    if (node.spouses.length === 1) return node.spouses[0];
+    const shortName = (spouse) => getRelationDisplayName(spouse, node.spouses.length > 1);
+    if (node.spouses.length === 1) return shortName(node.spouses[0]);
+    if (node.spouses.length <= 4) {
+      return node.spouses.map(shortName).join('·');
+    }
     return `${node.spouses[0]} 외 ${node.spouses.length - 1}명`;
+  }
+
+  function normalizeRelationName(value = '') {
+    return value.toLocaleLowerCase('ko-KR').replace(/[\s()·,]/g, '');
+  }
+
+  function relationNamesMatch(left, right) {
+    const normalizedLeft = normalizeRelationName(left);
+    const normalizedRight = normalizeRelationName(right);
+    return normalizedLeft === normalizedRight
+      || normalizedLeft.includes(normalizedRight)
+      || normalizedRight.includes(normalizedLeft);
+  }
+
+  function getSpouseColor(index) {
+    return MOTHER_COLORS[index % MOTHER_COLORS.length];
+  }
+
+  function getMotherVisual(node) {
+    if (!node.mother && !node.motherUnknown) return null;
+    if (node.motherUnknown) {
+      return { label: '이름 미기록', color: MOTHER_UNKNOWN_COLOR, unknown: true };
+    }
+    const spouseIndex = node.parent?.spouses.findIndex((spouse) =>
+      relationNamesMatch(spouse, node.mother)
+    ) ?? -1;
+    return {
+      label: getRelationDisplayName(node.mother, true),
+      fullLabel: node.mother,
+      color: spouseIndex >= 0 ? getSpouseColor(spouseIndex) : MOTHER_COLORS[0],
+      unknown: false
+    };
+  }
+
+  function hasMotherContext(node) {
+    if ((!node.mother && !node.motherUnknown) || !node.parent || node.group || node.supplemental) {
+      return false;
+    }
+    const motherGroups = new Set(node.parent.children
+      .filter((child) => !child.group && !child.supplemental)
+      .map((child) => {
+        if (child.motherUnknown) return '__unknown__';
+        return child.mother ? normalizeRelationName(child.mother) : null;
+      })
+      .filter(Boolean));
+    return node.parent.spouses.length > 1 || motherGroups.size > 1;
+  }
+
+  function getSpouseDetail(node) {
+    const hasChildMotherData = node.children.some((child) => child.mother || child.motherUnknown);
+    if (node.spouses.length < 2 && !hasChildMotherData) return node.spouses.join(', ');
+    const spouseGroups = node.spouses.map((spouse) => {
+      const children = node.children.filter((child) =>
+        child.mother && relationNamesMatch(spouse, child.mother)
+      );
+      return children.length
+        ? `${spouse}: ${children.map((child) => child.name).join('·')}`
+        : spouse;
+    });
+    const unknownCount = node.children.filter((child) => child.motherUnknown).length;
+    if (unknownCount) spouseGroups.push(`어머니 이름 미기록: ${unknownCount}명`);
+    return spouseGroups.join(' / ');
   }
 
   function isVisibleChild(node) {
@@ -426,16 +504,118 @@
     });
   }
 
+  function makeMotherGuideElements(links) {
+    const linksBySource = new Map();
+    links.forEach((link) => {
+      if (!linksBySource.has(link.source.id)) linksBySource.set(link.source.id, []);
+      linksBySource.get(link.source.id).push(link);
+    });
+
+    const elements = [];
+    linksBySource.forEach((familyLinks) => {
+      const runs = [];
+      let currentRun = null;
+      familyLinks.forEach((link) => {
+        if (!hasMotherContext(link.target)) {
+          currentRun = null;
+          return;
+        }
+        const visual = getMotherVisual(link.target);
+        const key = visual.unknown
+          ? `unknown-${link.target.id}`
+          : normalizeRelationName(visual.label);
+        if (!currentRun || currentRun.key !== key) {
+          currentRun = { key, visual, links: [] };
+          runs.push(currentRun);
+        }
+        currentRun.links.push(link);
+      });
+
+      runs.forEach((run) => {
+        const targetCenters = run.links.map(({ target }) => target.layoutX + NODE_WIDTH / 2);
+        const childY = run.links[0].target.layoutY;
+        const guideY = childY - 14;
+        const highlighted = query
+          && matches.has(run.links[0].source.id)
+          && run.links.some(({ target }) => matches.has(target.id));
+        const state = query ? (highlighted ? ' highlighted' : ' dimmed') : '';
+        const guideGroup = svgElement('g', {
+          class: `mother-guide-group${run.visual.unknown ? ' unknown' : ''}${state}`,
+          style: `--mother-color:${run.visual.color}`
+        });
+        const dropSegments = run.links.map(({ target }) => {
+          const targetX = target.layoutX + NODE_WIDTH / 2;
+          return `M ${targetX} ${guideY} V ${target.layoutY}`;
+        });
+        guideGroup.appendChild(svgElement('path', {
+          class: 'mother-guide-drop',
+          d: dropSegments.join(' ')
+        }));
+
+        const promiseSegments = run.links
+          .filter(({ target }) => target.layoutOnGospelLine)
+          .map(({ target }) => {
+            const targetX = target.layoutX + NODE_WIDTH / 2;
+            return `M ${targetX} ${guideY} V ${target.layoutY}`;
+          });
+        if (promiseSegments.length) {
+          guideGroup.appendChild(svgElement('path', {
+            class: 'mother-promise-tip',
+            d: promiseSegments.join(' ')
+          }));
+        }
+
+        const sameRow = run.links.every(({ target }) => target.layoutY === childY);
+        if (!run.visual.unknown && run.links.length > 1 && sameRow) {
+          const minX = Math.min(...targetCenters);
+          const maxX = Math.max(...targetCenters);
+          guideGroup.appendChild(svgElement('path', {
+            class: 'mother-guide-bracket',
+            d: `M ${minX} ${childY - 8} V ${guideY} H ${maxX} V ${childY - 8}`
+          }));
+
+          const labelCenterX = (minX + maxX) / 2;
+          const labelText = `${run.visual.label}의 자녀 ${run.links.length}명`;
+          const labelWidth = Math.min(132, Math.max(62, 18 + Array.from(labelText).length * 6.5));
+          const labelY = childY - 34;
+          const label = svgElement('g', { class: 'mother-guide-label' });
+          label.appendChild(svgElement('rect', {
+            x: labelCenterX - labelWidth / 2,
+            y: labelY,
+            width: labelWidth,
+            height: MOTHER_LABEL_HEIGHT,
+            rx: MOTHER_LABEL_HEIGHT / 2
+          }));
+          const text = svgElement('text', {
+            x: labelCenterX,
+            y: labelY + 11,
+            'text-anchor': 'middle'
+          });
+          text.textContent = labelText;
+          label.appendChild(text);
+          guideGroup.appendChild(label);
+        }
+        elements.push(guideGroup);
+      });
+    });
+    return elements;
+  }
+
   function makeNode(node) {
+    const motherVisual = hasMotherContext(node) ? getMotherVisual(node) : null;
     const spouseDescription = node.spouses.length ? `. 배우자 ${node.spouses.join(', ')}` : '';
+    const motherDescription = motherVisual
+      ? `. 어머니 ${motherVisual.unknown ? '이름이 기록되지 않음' : motherVisual.fullLabel}`
+      : '';
     const group = svgElement('g', {
-      class: 'genealogy-node',
+      class: `genealogy-node${motherVisual ? ' has-mother' : ''}`,
       transform: `translate(${node.layoutX} ${node.layoutY})`,
       tabindex: '0',
       role: 'button',
       'data-id': node.id,
       'data-kind': node.kind || 'nation',
-      'aria-label': `${node.name}. ${getNodeLabel(node)}${spouseDescription}${node.children.length ? '. 눌러서 후손 가지 열기 또는 닫기' : ''}`
+      style: motherVisual ? `--mother-color:${motherVisual.color}` : '',
+      'aria-label': `${node.name}. ${getNodeLabel(node)}${motherDescription}${spouseDescription}${node.children.length ? '. 눌러서 후손 가지 열기 또는 닫기' : ''}`
     });
     if (selectedId === node.id) group.classList.add('selected');
     if (node.group) group.classList.add('group');
@@ -447,8 +627,43 @@
     name.textContent = truncate(node.name, 20);
     group.appendChild(name);
     const meta = svgElement('text', { class: 'node-meta', x: 12, y: 33 });
-    meta.textContent = truncate(getNodeLabel(node), 23);
+    meta.textContent = truncate(getNodeLabel(node), motherVisual ? 12 : 23);
     group.appendChild(meta);
+
+    if (motherVisual) {
+      const badgeLabel = motherVisual.unknown
+        ? '모친 미상'
+        : `모 ${truncate(motherVisual.label, 7)}`;
+      const badgeWidth = Math.min(78, Math.max(38, 14 + Array.from(badgeLabel).length * 6.2));
+      const badgeX = NODE_WIDTH - badgeWidth - 9;
+      const badge = svgElement('g', { class: `mother-badge${motherVisual.unknown ? ' unknown' : ''}` });
+      badge.appendChild(svgElement('rect', {
+        x: badgeX,
+        y: 23,
+        width: badgeWidth,
+        height: 14,
+        rx: 7
+      }));
+      const badgeText = svgElement('text', {
+        x: badgeX + badgeWidth / 2,
+        y: 33,
+        'text-anchor': 'middle'
+      });
+      badgeText.textContent = badgeLabel;
+      badge.appendChild(badgeText);
+      const badgeTitle = svgElement('title');
+      badgeTitle.textContent = motherVisual.unknown
+        ? '어머니 이름이 성경 본문에 기록되지 않음'
+        : `어머니: ${motherVisual.fullLabel}`;
+      badge.appendChild(badgeTitle);
+      group.appendChild(badge);
+      group.appendChild(svgElement('circle', {
+        class: 'mother-pin',
+        cx: NODE_WIDTH / 2,
+        cy: 0,
+        r: 3.2
+      }));
+    }
 
     if (node.spouses.length) {
       const spouseX = getSpouseX(node);
@@ -485,15 +700,34 @@
       });
       spouseRole.textContent = node.spouses.length > 1 ? `배우자 ${node.spouses.length}명` : '배우자';
       spouseGroup.appendChild(spouseRole);
+      if (node.spouses.length > 1) {
+        const swatchGap = 7;
+        const swatchStartX = spouseX + SPOUSE_WIDTH - 9 - (node.spouses.length - 1) * swatchGap;
+        node.spouses.forEach((spouse, index) => {
+          const swatch = svgElement('circle', {
+            class: 'spouse-swatch',
+            cx: swatchStartX + index * swatchGap,
+            cy: spouseY + 9,
+            r: 2.4,
+            style: `--mother-color:${getSpouseColor(index)}`
+          });
+          const swatchTitle = svgElement('title');
+          swatchTitle.textContent = spouse;
+          swatch.appendChild(swatchTitle);
+          spouseGroup.appendChild(swatch);
+        });
+      }
       const spouseName = svgElement('text', {
-        class: 'spouse-name',
+        class: `spouse-name${node.spouses.length > 1 ? ' multi' : ''}`,
         x: spouseX + 11,
         y: spouseY + 26
       });
-      spouseName.textContent = truncate(getSpouseSummary(node), 15);
+      spouseName.textContent = truncate(getSpouseSummary(node), node.spouses.length <= 4 ? 19 : 15);
       spouseGroup.appendChild(spouseName);
       const spouseTitle = svgElement('title');
-      spouseTitle.textContent = `배우자: ${node.spouses.join(', ')}`;
+      spouseTitle.textContent = node.spouses.length > 1
+        ? `배우자: ${node.spouses.join(', ')} · 자녀 카드의 어머니 표식과 같은 색으로 구분`
+        : `배우자: ${node.spouses[0]}`;
       spouseGroup.appendChild(spouseTitle);
       spouseGroup.addEventListener('click', (event) => {
         event.stopPropagation();
@@ -554,7 +788,7 @@
     const { visible, links } = collectVisible(data.root);
     layoutTree(visible);
     viewport.dataset.density = visible.length > 300 ? 'high' : 'normal';
-    linksLayer.replaceChildren(...makeLinkPaths(links));
+    linksLayer.replaceChildren(...makeLinkPaths(links), ...makeMotherGuideElements(links));
     nodesLayer.replaceChildren(...visible.map(makeNode));
     addRouteLabels(visible);
     visibleCount.textContent = `${countWithSpouses(visible).toLocaleString('ko-KR')}명`;
@@ -647,9 +881,11 @@
     selectedId = node.id;
     detailName.textContent = node.name;
     const parentText = node.parent ? `${node.parent.name}의 계보` : '인류의 계보 시작';
-    const motherText = node.mother ? ` · 어머니 ${node.mother}` : '';
+    const motherText = node.mother
+      ? ` · 어머니 ${node.mother}`
+      : node.motherUnknown ? ' · 어머니 이름 미기록' : '';
     detailRelation.textContent = `${parentText}${motherText}`;
-    detailSpouse.textContent = node.spouses.length ? node.spouses.join(', ') : '성경 본문에 이름이 기록되지 않음';
+    detailSpouse.textContent = node.spouses.length ? getSpouseDetail(node) : '성경 본문에 이름이 기록되지 않음';
     detailLifespanRow.hidden = !node.lifespan;
     detailLifespan.textContent = node.lifespan || '';
     detailParenthoodRow.hidden = !node.parenthood;
@@ -670,7 +906,8 @@
     }
     const found = data.people.filter((node) =>
       node.name.toLocaleLowerCase('ko-KR').includes(query) ||
-      node.spouses.some((spouse) => spouse.toLocaleLowerCase('ko-KR').includes(query))
+      node.spouses.some((spouse) => spouse.toLocaleLowerCase('ko-KR').includes(query)) ||
+      node.mother?.toLocaleLowerCase('ko-KR').includes(query)
     );
     found.forEach((node) => {
       matches.add(node.id);
