@@ -32,13 +32,19 @@
   let layoutBounds = { width: 600, height: 600, minX: 0, minY: 0 };
   let transform = { x: 0, y: 22, scale: 1 };
   let hasActivated = false;
+  const activePointers = new Map();
   let dragState = null;
+  let pinchState = null;
   let suppressClick = false;
+  let suppressClickUntil = 0;
   let activePreset = null;
   let zoomTarget = null;
   let zoomFrame = null;
   let panFrame = null;
   let pendingPan = null;
+  let inertiaFrame = null;
+  let inertiaVelocity = { x: 0, y: 0 };
+  let inertiaLastTime = 0;
   let lastZoomPercent = null;
 
   const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -58,6 +64,25 @@
   const MAX_DENSE_ROW_PADDING = 56;
   const MAX_MAINLINE_DELAY = 4;
   const MAINLINE_ROW_COST = 360;
+  const PAN_THRESHOLD = 4;
+  const VELOCITY_SAMPLE_WINDOW = 100;
+  const INERTIA_MIN_SPEED = .06;
+  const INERTIA_MAX_SPEED = 2.4;
+  const INERTIA_STOP_SPEED = .015;
+  const INERTIA_TIME_CONSTANT = 300;
+  const SYNTHETIC_CLICK_GUARD = 420;
+  const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  function isClickSuppressed() {
+    return suppressClick || performance.now() < suppressClickUntil;
+  }
+
+  function guardAgainstSyntheticClick() {
+    suppressClickUntil = Math.max(
+      suppressClickUntil,
+      performance.now() + SYNTHETIC_CLICK_GUARD
+    );
+  }
 
   function svgElement(tag, attrs = {}) {
     const element = document.createElementNS(SVG_NS, tag);
@@ -731,7 +756,7 @@
       spouseGroup.appendChild(spouseTitle);
       spouseGroup.addEventListener('click', (event) => {
         event.stopPropagation();
-        if (!suppressClick) selectNode(node);
+        if (!isClickSuppressed()) selectNode(node);
       });
       group.appendChild(spouseGroup);
     }
@@ -746,7 +771,7 @@
 
     group.addEventListener('click', (event) => {
       event.stopPropagation();
-      if (suppressClick) return;
+      if (isClickSuppressed()) return;
       toggleNode(node);
     });
     group.addEventListener('keydown', (event) => {
@@ -796,6 +821,7 @@
     activePreset = null;
     selectNode(node);
     if (!node.children.length) return;
+    cancelInertia();
     cancelSmoothZoom();
     viewport.style.transition = '';
     const anchor = captureNodeAnchor(node);
@@ -805,6 +831,7 @@
   }
 
   function render(anchor = null) {
+    cancelInertia();
     const { visible, links } = collectVisible(data.root);
     layoutTree(visible);
     restoreNodeAnchor(anchor);
@@ -827,6 +854,77 @@
       lastZoomPercent = zoomPercent;
       zoomLabel.textContent = `${zoomPercent}%`;
     }
+  }
+
+  function flushPendingPan() {
+    if (panFrame) cancelAnimationFrame(panFrame);
+    panFrame = null;
+    if (!pendingPan) return;
+    transform.x = pendingPan.x;
+    transform.y = pendingPan.y;
+    pendingPan = null;
+    applyTransform();
+  }
+
+  function queuePan(x, y) {
+    pendingPan = { x, y };
+    if (panFrame) return;
+    panFrame = requestAnimationFrame(() => {
+      panFrame = null;
+      if (!pendingPan) return;
+      transform.x = pendingPan.x;
+      transform.y = pendingPan.y;
+      pendingPan = null;
+      applyTransform();
+    });
+  }
+
+  function cancelInertia() {
+    if (inertiaFrame) cancelAnimationFrame(inertiaFrame);
+    inertiaFrame = null;
+    inertiaVelocity = { x: 0, y: 0 };
+    inertiaLastTime = 0;
+  }
+
+  function animateInertia(now) {
+    if (!inertiaFrame) return;
+    const elapsed = Math.min(34, Math.max(0, now - inertiaLastTime));
+    inertiaLastTime = now;
+    const decay = Math.exp(-elapsed / INERTIA_TIME_CONSTANT);
+    const travel = INERTIA_TIME_CONSTANT * (1 - decay);
+    transform.x += inertiaVelocity.x * travel;
+    transform.y += inertiaVelocity.y * travel;
+    inertiaVelocity.x *= decay;
+    inertiaVelocity.y *= decay;
+    applyTransform();
+    if (Math.hypot(inertiaVelocity.x, inertiaVelocity.y) <= INERTIA_STOP_SPEED) {
+      cancelInertia();
+      return;
+    }
+    inertiaFrame = requestAnimationFrame(animateInertia);
+  }
+
+  function startInertia(samples, releaseTime) {
+    cancelInertia();
+    if (reducedMotionQuery.matches || samples.length < 2) return;
+    const recent = samples.filter((sample) => sample.time >= releaseTime - VELOCITY_SAMPLE_WINDOW);
+    if (recent.length < 2 || releaseTime - recent.at(-1).time > 80) return;
+    const first = recent[0];
+    const last = recent.at(-1);
+    const elapsed = last.time - first.time;
+    if (elapsed <= 0) return;
+    let velocityX = (last.x - first.x) / elapsed;
+    let velocityY = (last.y - first.y) / elapsed;
+    const speed = Math.hypot(velocityX, velocityY);
+    if (speed < INERTIA_MIN_SPEED) return;
+    if (speed > INERTIA_MAX_SPEED) {
+      const restraint = INERTIA_MAX_SPEED / speed;
+      velocityX *= restraint;
+      velocityY *= restraint;
+    }
+    inertiaVelocity = { x: velocityX, y: velocityY };
+    inertiaLastTime = performance.now();
+    inertiaFrame = requestAnimationFrame(animateInertia);
   }
 
   function cancelSmoothZoom() {
@@ -858,6 +956,8 @@
   }
 
   function fitToScreen(animated = false) {
+    if (activePointers.size) cancelInteraction();
+    cancelInertia();
     cancelSmoothZoom();
     const rect = stage.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
@@ -876,6 +976,8 @@
   }
 
   function zoomAt(clientX, clientY, factor, smooth = true) {
+    if (activePointers.size) cancelInteraction();
+    cancelInertia();
     const rect = stage.getBoundingClientRect();
     const pointerX = clientX - rect.left;
     const pointerY = clientY - rect.top;
@@ -946,6 +1048,7 @@
   }
 
   function focusNode(node) {
+    cancelInertia();
     cancelSmoothZoom();
     const rect = stage.getBoundingClientRect();
     const nextScale = Math.max(.55, Math.min(1.25, transform.scale));
@@ -970,6 +1073,7 @@
   function configureExpansionPreset(targetName, includeTargetChildren, presetName) {
     const target = data.people.find((node) => node.name === targetName);
     if (!target) return false;
+    cancelInertia();
     cancelSmoothZoom();
     activePreset = presetName;
     expanded.clear();
@@ -1052,46 +1156,268 @@
     zoomAt(event.clientX, event.clientY, Math.exp(-restrainedDelta * .00045));
   }, { passive: false });
 
-  stage.addEventListener('pointerdown', (event) => {
-    if (event.button !== 0 || event.target.closest('.genealogy-node, .genealogy-detail, button, input')) return;
+  function pointerTime(event) {
+    return Number.isFinite(event.timeStamp) ? event.timeStamp : performance.now();
+  }
+
+  function capturePointer(pointerId) {
+    try {
+      if (!stage.hasPointerCapture(pointerId)) stage.setPointerCapture(pointerId);
+    } catch {
+      // The pointer may have ended between the event and this call.
+    }
+  }
+
+  function releasePointer(pointerId) {
+    try {
+      if (stage.hasPointerCapture(pointerId)) stage.releasePointerCapture(pointerId);
+    } catch {
+      // Releasing an already-ended pointer is harmless.
+    }
+  }
+
+  function isInsideStage(clientX, clientY) {
+    const rect = stage.getBoundingClientRect();
+    return clientX >= rect.left && clientX <= rect.right
+      && clientY >= rect.top && clientY <= rect.bottom;
+  }
+
+  function beginDrag(pointer, alreadyMoved = false) {
+    pinchState = null;
+    dragState = {
+      pointerId: pointer.id,
+      pointerType: pointer.pointerType,
+      x: pointer.x,
+      y: pointer.y,
+      originX: transform.x,
+      originY: transform.y,
+      moved: alreadyMoved,
+      waitForThreshold: pointer.interactive && !alreadyMoved,
+      samples: [{ x: pointer.x, y: pointer.y, time: pointer.time }]
+    };
+    if (alreadyMoved) suppressClick = true;
+  }
+
+  function getPinchPoints() {
+    return [...activePointers.values()].slice(0, 2);
+  }
+
+  function beginPinch() {
+    const pointers = getPinchPoints();
+    if (pointers.length < 2) return;
+    cancelInertia();
     cancelSmoothZoom();
+    flushPendingPan();
     viewport.style.transition = '';
-    stage.setPointerCapture(event.pointerId);
-    dragState = { x: event.clientX, y: event.clientY, originX: transform.x, originY: transform.y };
-    suppressClick = false;
-    stage.classList.add('dragging');
-  });
-  stage.addEventListener('pointermove', (event) => {
-    if (!dragState) return;
-    const dx = event.clientX - dragState.x;
-    const dy = event.clientY - dragState.y;
-    if (Math.abs(dx) + Math.abs(dy) > 4) suppressClick = true;
-    pendingPan = { x: dragState.originX + dx, y: dragState.originY + dy };
-    if (!panFrame) {
-      panFrame = requestAnimationFrame(() => {
-        if (pendingPan) {
-          transform.x = pendingPan.x;
-          transform.y = pendingPan.y;
-          pendingPan = null;
-          applyTransform();
-        }
-        panFrame = null;
-      });
-    }
-  });
-  const endDrag = () => {
-    if (pendingPan) {
-      transform.x = pendingPan.x;
-      transform.y = pendingPan.y;
-      pendingPan = null;
-      applyTransform();
-    }
+    activePointers.forEach((pointer) => capturePointer(pointer.id));
+    const rect = stage.getBoundingClientRect();
+    const centerX = (pointers[0].x + pointers[1].x) / 2 - rect.left;
+    const centerY = (pointers[0].y + pointers[1].y) / 2 - rect.top;
+    pinchState = {
+      pointerIds: pointers.map((pointer) => pointer.id),
+      distance: Math.max(1, Math.hypot(
+        pointers[1].x - pointers[0].x,
+        pointers[1].y - pointers[0].y
+      )),
+      scale: transform.scale,
+      worldX: (centerX - transform.x) / transform.scale,
+      worldY: (centerY - transform.y) / transform.scale
+    };
     dragState = null;
+    suppressClick = true;
+    stage.classList.add('dragging');
+  }
+
+  function updatePinch() {
+    const pointers = getPinchPoints();
+    if (pointers.length < 2) return;
+    const pointerIds = pointers.map((pointer) => pointer.id);
+    if (!pinchState || pointerIds.some((id, index) => pinchState.pointerIds[index] !== id)) {
+      beginPinch();
+      return;
+    }
+    const rect = stage.getBoundingClientRect();
+    const centerX = (pointers[0].x + pointers[1].x) / 2 - rect.left;
+    const centerY = (pointers[0].y + pointers[1].y) / 2 - rect.top;
+    const distance = Math.max(1, Math.hypot(
+      pointers[1].x - pointers[0].x,
+      pointers[1].y - pointers[0].y
+    ));
+    const nextScale = Math.max(.008, Math.min(3.2,
+      pinchState.scale * distance / pinchState.distance
+    ));
+    transform = {
+      x: centerX - pinchState.worldX * nextScale,
+      y: centerY - pinchState.worldY * nextScale,
+      scale: nextScale
+    };
+    applyTransform();
+  }
+
+  function collectPointerSamples(event) {
+    const coalesced = typeof event.getCoalescedEvents === 'function'
+      ? event.getCoalescedEvents()
+      : [];
+    const events = coalesced.length ? [...coalesced] : [event];
+    const last = events.at(-1);
+    if (last !== event && (
+      last.clientX !== event.clientX
+      || last.clientY !== event.clientY
+      || last.timeStamp !== event.timeStamp
+    )) events.push(event);
+    return events.map((sample) => ({
+      x: sample.clientX,
+      y: sample.clientY,
+      time: pointerTime(sample)
+    }));
+  }
+
+  function updateDrag(event) {
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+    const samples = collectPointerSamples(event);
+    samples.forEach((sample) => {
+      const dx = sample.x - dragState.x;
+      const dy = sample.y - dragState.y;
+      if (!dragState.moved && Math.abs(dx) + Math.abs(dy) > PAN_THRESHOLD) {
+        dragState.moved = true;
+        dragState.waitForThreshold = false;
+        suppressClick = true;
+        capturePointer(event.pointerId);
+      }
+      dragState.samples.push(sample);
+      const oldestAllowed = sample.time - VELOCITY_SAMPLE_WINDOW - 20;
+      while (dragState.samples.length > 2 && dragState.samples[0].time < oldestAllowed) {
+        dragState.samples.shift();
+      }
+      if (!dragState.waitForThreshold) {
+        queuePan(dragState.originX + dx, dragState.originY + dy);
+      }
+    });
+  }
+
+  function settleInteraction(completedDrag, allowInertia, releaseTime) {
+    const shouldGuardClick = suppressClick || Boolean(pinchState) || Boolean(completedDrag?.moved);
+    flushPendingPan();
+    dragState = null;
+    pinchState = null;
     stage.classList.remove('dragging');
-    window.setTimeout(() => { suppressClick = false; }, 0);
+    if (allowInertia && completedDrag?.moved) {
+      startInertia(completedDrag.samples, releaseTime);
+    }
+    suppressClick = false;
+    if (shouldGuardClick) guardAgainstSyntheticClick();
+  }
+
+  function endPointer(pointerId, { cancelled = false, releaseTime = performance.now() } = {}) {
+    const pointer = activePointers.get(pointerId);
+    if (!pointer) return;
+    const wasPinching = Boolean(pinchState);
+    const completedDrag = dragState?.pointerId === pointerId ? dragState : null;
+    activePointers.delete(pointerId);
+    releasePointer(pointerId);
+
+    if (activePointers.size >= 2) {
+      beginPinch();
+      return;
+    }
+    if (activePointers.size === 1) {
+      const remaining = activePointers.values().next().value;
+      beginDrag(remaining, wasPinching || Boolean(completedDrag?.moved));
+      return;
+    }
+    settleInteraction(completedDrag, !cancelled && !wasPinching, releaseTime);
+  }
+
+  function cancelInteraction() {
+    const shouldGuardClick = suppressClick || Boolean(pinchState) || Boolean(dragState?.moved);
+    cancelInertia();
+    cancelSmoothZoom();
+    flushPendingPan();
+    const pointerIds = [...activePointers.keys()];
+    activePointers.clear();
+    dragState = null;
+    pinchState = null;
+    pointerIds.forEach(releasePointer);
+    stage.classList.remove('dragging');
+    suppressClick = false;
+    if (shouldGuardClick) guardAgainstSyntheticClick();
+  }
+
+  stage.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    cancelInertia();
+    cancelSmoothZoom();
+    const interactive = event.target.closest?.('.genealogy-node');
+    if (event.target.closest?.('.genealogy-detail, button, input')) return;
+    if (interactive && event.pointerType !== 'touch') return;
+    flushPendingPan();
+    viewport.style.transition = '';
+    if (!activePointers.size) suppressClick = false;
+    const pointer = {
+      id: event.pointerId,
+      pointerType: event.pointerType,
+      x: event.clientX,
+      y: event.clientY,
+      time: pointerTime(event),
+      interactive: Boolean(interactive)
+    };
+    activePointers.set(event.pointerId, pointer);
+    if (!interactive) capturePointer(event.pointerId);
+    if (activePointers.size >= 2) beginPinch();
+    else beginDrag(pointer);
+    stage.classList.add('dragging');
+    if (!interactive || activePointers.size >= 2) event.preventDefault();
+  });
+
+  function handlePointerMove(event) {
+    const pointer = activePointers.get(event.pointerId);
+    if (!pointer) return;
+    if (event.pointerType !== 'touch' && (event.buttons & 1) === 0) {
+      endPointer(event.pointerId, { cancelled: true, releaseTime: pointerTime(event) });
+      return;
+    }
+    if (event.pointerType === 'mouse' && !isInsideStage(event.clientX, event.clientY)) {
+      endPointer(event.pointerId, { cancelled: true, releaseTime: pointerTime(event) });
+      return;
+    }
+    pointer.x = event.clientX;
+    pointer.y = event.clientY;
+    pointer.time = pointerTime(event);
+    if (activePointers.size >= 2) updatePinch();
+    else updateDrag(event);
+    event.preventDefault();
+  }
+
+  function handlePointerEnd(event, cancelled = false) {
+    if (!activePointers.has(event.pointerId)) return;
+    const outside = event.pointerType === 'mouse' && !isInsideStage(event.clientX, event.clientY);
+    endPointer(event.pointerId, {
+      cancelled: cancelled || outside,
+      releaseTime: pointerTime(event)
+    });
+  }
+
+  window.addEventListener('pointermove', handlePointerMove, { capture: true, passive: false });
+  window.addEventListener('pointerup', (event) => handlePointerEnd(event), true);
+  window.addEventListener('pointercancel', (event) => handlePointerEnd(event, true), true);
+  stage.addEventListener('lostpointercapture', (event) => {
+    if (activePointers.has(event.pointerId)) handlePointerEnd(event, true);
+  });
+  window.addEventListener('blur', cancelInteraction);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) cancelInteraction();
+  });
+  const handleReducedMotionChange = () => {
+    if (reducedMotionQuery.matches) cancelInertia();
   };
-  stage.addEventListener('pointerup', endDrag);
-  stage.addEventListener('pointercancel', endDrag);
+  if (typeof reducedMotionQuery.addEventListener === 'function') {
+    reducedMotionQuery.addEventListener('change', handleReducedMotionChange);
+  } else if (typeof reducedMotionQuery.addListener === 'function') {
+    reducedMotionQuery.addListener(handleReducedMotionChange);
+  }
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach((eventName) => {
+    stage.addEventListener(eventName, (event) => event.preventDefault(), { passive: false });
+  });
 
   window.addEventListener('genealogy:activate', () => {
     if (!hasActivated) {
