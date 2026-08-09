@@ -443,6 +443,10 @@ const zoomTargets = {
   acts: { cssVar: '--acts-zoom', value: Number(zoomInput.value) },
   epistles: { cssVar: '--epistles-zoom', value: Number(zoomInput.value) }
 };
+const timelineTouchPointers = new Map();
+let timelinePinchState = null;
+let timelineSuppressClickUntil = 0;
+const TIMELINE_CLICK_GUARD = 420;
 
 function toPercent(year, range) {
   if (range.start > range.end) {
@@ -948,7 +952,7 @@ function setZoomFor(key, val) {
 
   const zoom = Math.max(1, Math.min(4, Number(val)));
   target.value = zoom;
-  document.documentElement.style.setProperty(target.cssVar, zoom.toFixed(1));
+  document.documentElement.style.setProperty(target.cssVar, zoom.toFixed(3));
 }
 
 function getZoomContentWidth(sectionScroll) {
@@ -956,34 +960,180 @@ function getZoomContentWidth(sectionScroll) {
   return zoomContent?.scrollWidth || sectionScroll.scrollWidth;
 }
 
-function zoomAroundPointer(sectionScroll, zoomKey, delta, clientX) {
+function setZoomAroundPointer(sectionScroll, zoomKey, value, clientX, fixedAnchorRatio = null) {
   const target = zoomTargets[zoomKey];
   if (!target || !sectionScroll) return;
 
   const beforeWidth = getZoomContentWidth(sectionScroll);
   const rect = sectionScroll.getBoundingClientRect();
-  const pointerX = clientX - rect.left;
-  const anchorRatio = beforeWidth > 0
+  const pointerX = Math.min(Math.max(clientX - rect.left, 0), sectionScroll.clientWidth);
+  const anchorRatio = Number.isFinite(fixedAnchorRatio)
+    ? fixedAnchorRatio
+    : beforeWidth > 0
     ? (sectionScroll.scrollLeft + pointerX) / beforeWidth
     : 0;
 
-  const nextZoom = Math.max(1, Math.min(4, target.value + delta));
-  if (nextZoom === target.value) return;
+  const nextZoom = Math.max(1, Math.min(4, Number(value)));
+  if (nextZoom === target.value && !Number.isFinite(fixedAnchorRatio)) return;
 
   setZoomFor(zoomKey, nextZoom);
 
-  requestAnimationFrame(() => {
-    const linkedAreas = sectionScroll.dataset.syncGroup
-      ? Array.from(document.querySelectorAll(`.section-scroll[data-sync-group="${sectionScroll.dataset.syncGroup}"]`))
-      : [sectionScroll];
+  const linkedAreas = sectionScroll.dataset.syncGroup
+    ? Array.from(document.querySelectorAll(`.section-scroll[data-sync-group="${sectionScroll.dataset.syncGroup}"]`))
+    : [sectionScroll];
 
-    linkedAreas.forEach((area) => {
-      const areaRect = area.getBoundingClientRect();
-      const areaPointerX = area === sectionScroll ? pointerX : Math.min(Math.max(clientX - areaRect.left, 0), area.clientWidth);
-      const afterWidth = getZoomContentWidth(area);
-      area.scrollLeft = anchorRatio * afterWidth - areaPointerX;
-    });
+  linkedAreas.forEach((area) => {
+    const areaRect = area.getBoundingClientRect();
+    const areaPointerX = area === sectionScroll ? pointerX : Math.min(Math.max(clientX - areaRect.left, 0), area.clientWidth);
+    const afterWidth = getZoomContentWidth(area);
+    area.scrollLeft = anchorRatio * afterWidth - areaPointerX;
   });
+}
+
+function zoomAroundPointer(sectionScroll, zoomKey, delta, clientX) {
+  const target = zoomTargets[zoomKey];
+  if (!target) return;
+  setZoomAroundPointer(sectionScroll, zoomKey, target.value + delta, clientX);
+}
+
+function getTimelineZoomKey(sectionScroll) {
+  if (!sectionScroll) return '';
+  return sectionScroll.dataset.zoomKey
+    || (sectionScroll.classList.contains('split-marker') ? 'divided' : '');
+}
+
+function getTimelinePointers(sectionScroll) {
+  return [...timelineTouchPointers.values()]
+    .filter((pointer) => pointer.sectionScroll === sectionScroll);
+}
+
+function captureTimelinePointer(pointer) {
+  try {
+    if (!pointer.sectionScroll.hasPointerCapture(pointer.id)) {
+      pointer.sectionScroll.setPointerCapture(pointer.id);
+    }
+  } catch {
+    // The touch may have ended before capture was established.
+  }
+}
+
+function releaseTimelinePointer(pointer) {
+  try {
+    if (pointer.sectionScroll.hasPointerCapture(pointer.id)) {
+      pointer.sectionScroll.releasePointerCapture(pointer.id);
+    }
+  } catch {
+    // Releasing an already-ended touch is harmless.
+  }
+}
+
+function beginTimelinePinch(sectionScroll) {
+  const pointers = getTimelinePointers(sectionScroll).slice(0, 2);
+  const zoomKey = getTimelineZoomKey(sectionScroll);
+  const target = zoomTargets[zoomKey];
+  if (pointers.length < 2 || !target) return;
+
+  pointers.forEach(captureTimelinePointer);
+  const rect = sectionScroll.getBoundingClientRect();
+  const midpointX = (pointers[0].x + pointers[1].x) / 2;
+  const pointerX = Math.min(Math.max(midpointX - rect.left, 0), sectionScroll.clientWidth);
+  const contentWidth = getZoomContentWidth(sectionScroll);
+  timelinePinchState = {
+    sectionScroll,
+    zoomKey,
+    pointerIds: pointers.map((pointer) => pointer.id),
+    startDistance: Math.max(1, Math.hypot(
+      pointers[1].x - pointers[0].x,
+      pointers[1].y - pointers[0].y
+    )),
+    startZoom: target.value,
+    anchorRatio: contentWidth > 0
+      ? (sectionScroll.scrollLeft + pointerX) / contentWidth
+      : 0,
+    pendingUpdate: null,
+    frame: null
+  };
+  pointers.forEach((pointer) => { pointer.pinched = true; });
+  sectionScroll.classList.add('timeline-pinching');
+  tooltip.classList.remove('show');
+}
+
+function flushTimelinePinchUpdate(state) {
+  if (!state) return;
+  if (state.frame) cancelAnimationFrame(state.frame);
+  state.frame = null;
+  if (!state.pendingUpdate) return;
+  const { zoom, clientX } = state.pendingUpdate;
+  state.pendingUpdate = null;
+  setZoomAroundPointer(
+    state.sectionScroll,
+    state.zoomKey,
+    zoom,
+    clientX,
+    state.anchorRatio
+  );
+}
+
+function queueTimelinePinchUpdate(state, zoom, clientX) {
+  state.pendingUpdate = { zoom, clientX };
+  if (state.frame) return;
+  state.frame = requestAnimationFrame(() => flushTimelinePinchUpdate(state));
+}
+
+function updateTimelinePinch() {
+  const state = timelinePinchState;
+  if (!state) return;
+  const pointers = state.pointerIds
+    .map((pointerId) => timelineTouchPointers.get(pointerId))
+    .filter(Boolean);
+  if (pointers.length < 2) return;
+
+  const distance = Math.max(1, Math.hypot(
+    pointers[1].x - pointers[0].x,
+    pointers[1].y - pointers[0].y
+  ));
+  const midpointX = (pointers[0].x + pointers[1].x) / 2;
+  const nextZoom = state.startZoom * distance / state.startDistance;
+  queueTimelinePinchUpdate(state, nextZoom, midpointX);
+}
+
+function guardTimelineClick() {
+  timelineSuppressClickUntil = Math.max(
+    timelineSuppressClickUntil,
+    performance.now() + TIMELINE_CLICK_GUARD
+  );
+}
+
+function endTimelineTouch(pointerId) {
+  const pointer = timelineTouchPointers.get(pointerId);
+  if (!pointer) return;
+  const state = timelinePinchState;
+  const wasPinching = state?.pointerIds.includes(pointerId);
+  if (wasPinching) flushTimelinePinchUpdate(state);
+  timelineTouchPointers.delete(pointerId);
+  releaseTimelinePointer(pointer);
+  if (wasPinching || pointer.pinched) guardTimelineClick();
+
+  if (!wasPinching) return;
+  state.sectionScroll.classList.remove('timeline-pinching');
+  timelinePinchState = null;
+  const remaining = getTimelinePointers(state.sectionScroll);
+  if (remaining.length >= 2) {
+    beginTimelinePinch(state.sectionScroll);
+  } else if (remaining.length === 1) {
+    releaseTimelinePointer(remaining[0]);
+  } else {
+    remaining.forEach(releaseTimelinePointer);
+  }
+}
+
+function cancelTimelineTouches() {
+  const pointers = [...timelineTouchPointers.values()];
+  timelineTouchPointers.clear();
+  if (timelinePinchState?.frame) cancelAnimationFrame(timelinePinchState.frame);
+  timelinePinchState?.sectionScroll.classList.remove('timeline-pinching');
+  timelinePinchState = null;
+  pointers.forEach(releaseTimelinePointer);
 }
 
 zoomInput.addEventListener('input', (e) => setZoom(e.target.value));
@@ -1001,6 +1151,62 @@ timelinePages.forEach((page) => {
     const zoomKey = sectionScroll?.dataset.zoomKey || 'divided';
     zoomAroundPointer(sectionScroll, zoomKey, delta, e.clientX);
   }, { passive: false });
+});
+
+const timelineScrollAreas = Array.from(document.querySelectorAll(
+  '.timeline-page:not(#genealogy) .section-scroll[data-zoom-key]'
+));
+
+timelineScrollAreas.forEach((sectionScroll) => {
+  sectionScroll.addEventListener('pointerdown', (event) => {
+    if (event.pointerType !== 'touch' || !zoomTargets[getTimelineZoomKey(sectionScroll)]) return;
+    timelineTouchPointers.set(event.pointerId, {
+      id: event.pointerId,
+      sectionScroll,
+      x: event.clientX,
+      y: event.clientY,
+      pinched: false
+    });
+    if (getTimelinePointers(sectionScroll).length >= 2) {
+      beginTimelinePinch(sectionScroll);
+      event.preventDefault();
+    }
+  });
+
+  sectionScroll.addEventListener('lostpointercapture', (event) => {
+    if (
+      timelineTouchPointers.has(event.pointerId)
+      && timelinePinchState?.pointerIds.includes(event.pointerId)
+    ) endTimelineTouch(event.pointerId);
+  });
+
+  sectionScroll.addEventListener('click', (event) => {
+    if (performance.now() >= timelineSuppressClickUntil) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach((eventName) => {
+    sectionScroll.addEventListener(eventName, (event) => event.preventDefault(), { passive: false });
+  });
+});
+
+window.addEventListener('pointermove', (event) => {
+  const pointer = timelineTouchPointers.get(event.pointerId);
+  if (!pointer) return;
+  pointer.x = event.clientX;
+  pointer.y = event.clientY;
+  if (timelinePinchState?.pointerIds.includes(event.pointerId)) {
+    event.preventDefault();
+    updateTimelinePinch();
+  }
+}, { capture: true, passive: false });
+
+window.addEventListener('pointerup', (event) => endTimelineTouch(event.pointerId), true);
+window.addEventListener('pointercancel', (event) => endTimelineTouch(event.pointerId), true);
+window.addEventListener('blur', cancelTimelineTouches);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) cancelTimelineTouches();
 });
 
 addAxisTicks(document.getElementById('early-axis'), earlyRange);

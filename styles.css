@@ -90,7 +90,14 @@ body {
 .controls[hidden] { display: none; }
 .controls input { width: 220px; }
 .timeline-wrap { width:min(1400px,94vw); margin:0 auto 2.2rem; overflow-y:visible; padding-bottom:1rem; }
-.section-scroll{ overflow-x:auto; overflow-y:hidden; }
+.section-scroll{
+  overflow-x:auto;
+  overflow-y:hidden;
+}
+.section-scroll[data-zoom-key]{
+  touch-action:pan-x pan-y;
+  overscroll-behavior-x:contain;
+}
 .axis, .lane, .split-marker { position:relative; }
 .axis { height:3.2rem; border-bottom:1px solid var(--grid); margin-bottom:.7rem; }
 .tick { position:absolute; transform:translateX(-50%); color:var(--muted); font-size:.8rem; }
