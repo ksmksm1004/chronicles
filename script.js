@@ -447,6 +447,7 @@ const timelineTouchPointers = new Map();
 let timelinePinchState = null;
 let timelineSuppressClickUntil = 0;
 const TIMELINE_CLICK_GUARD = 420;
+const timelineUsesTouchEvents = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 function toPercent(year, range) {
   if (range.start > range.end) {
@@ -1008,6 +1009,7 @@ function getTimelinePointers(sectionScroll) {
 }
 
 function captureTimelinePointer(pointer) {
+  if (pointer.source !== 'pointer') return;
   try {
     if (!pointer.sectionScroll.hasPointerCapture(pointer.id)) {
       pointer.sectionScroll.setPointerCapture(pointer.id);
@@ -1018,6 +1020,7 @@ function captureTimelinePointer(pointer) {
 }
 
 function releaseTimelinePointer(pointer) {
+  if (pointer.source !== 'pointer') return;
   try {
     if (pointer.sectionScroll.hasPointerCapture(pointer.id)) {
       pointer.sectionScroll.releasePointerCapture(pointer.id);
@@ -1159,13 +1162,18 @@ const timelineScrollAreas = Array.from(document.querySelectorAll(
 
 timelineScrollAreas.forEach((sectionScroll) => {
   sectionScroll.addEventListener('pointerdown', (event) => {
-    if (event.pointerType !== 'touch' || !zoomTargets[getTimelineZoomKey(sectionScroll)]) return;
+    if (
+      timelineUsesTouchEvents
+      || event.pointerType !== 'touch'
+      || !zoomTargets[getTimelineZoomKey(sectionScroll)]
+    ) return;
     timelineTouchPointers.set(event.pointerId, {
       id: event.pointerId,
       sectionScroll,
       x: event.clientX,
       y: event.clientY,
-      pinched: false
+      pinched: false,
+      source: 'pointer'
     });
     if (getTimelinePointers(sectionScroll).length >= 2) {
       beginTimelinePinch(sectionScroll);
@@ -1187,11 +1195,55 @@ timelineScrollAreas.forEach((sectionScroll) => {
   }, true);
 
   ['gesturestart', 'gesturechange', 'gestureend'].forEach((eventName) => {
-    sectionScroll.addEventListener(eventName, (event) => event.preventDefault(), { passive: false });
+    sectionScroll.addEventListener(eventName, (event) => event.preventDefault(), {
+      capture: true,
+      passive: false
+    });
   });
+
+  sectionScroll.addEventListener('touchstart', (event) => {
+    if (!timelineUsesTouchEvents) return;
+    Array.from(event.changedTouches).forEach((touch) => {
+      if (!sectionScroll.contains(touch.target)) return;
+      timelineTouchPointers.set(touch.identifier, {
+        id: touch.identifier,
+        sectionScroll,
+        x: touch.clientX,
+        y: touch.clientY,
+        pinched: false,
+        source: 'touch'
+      });
+    });
+    if (getTimelinePointers(sectionScroll).length >= 2) {
+      beginTimelinePinch(sectionScroll);
+      event.preventDefault();
+    }
+  }, { capture: true, passive: false });
+
+  sectionScroll.addEventListener('touchmove', (event) => {
+    if (!timelineUsesTouchEvents) return;
+    Array.from(event.touches).forEach((touch) => {
+      const pointer = timelineTouchPointers.get(touch.identifier);
+      if (!pointer || pointer.sectionScroll !== sectionScroll) return;
+      pointer.x = touch.clientX;
+      pointer.y = touch.clientY;
+    });
+    if (timelinePinchState?.sectionScroll === sectionScroll) {
+      event.preventDefault();
+      updateTimelinePinch();
+    }
+  }, { capture: true, passive: false });
+
+  const finishTouches = (event) => {
+    if (!timelineUsesTouchEvents) return;
+    Array.from(event.changedTouches).forEach((touch) => endTimelineTouch(touch.identifier));
+  };
+  sectionScroll.addEventListener('touchend', finishTouches, { capture: true, passive: true });
+  sectionScroll.addEventListener('touchcancel', finishTouches, { capture: true, passive: true });
 });
 
 window.addEventListener('pointermove', (event) => {
+  if (timelineUsesTouchEvents) return;
   const pointer = timelineTouchPointers.get(event.pointerId);
   if (!pointer) return;
   pointer.x = event.clientX;
@@ -1202,8 +1254,12 @@ window.addEventListener('pointermove', (event) => {
   }
 }, { capture: true, passive: false });
 
-window.addEventListener('pointerup', (event) => endTimelineTouch(event.pointerId), true);
-window.addEventListener('pointercancel', (event) => endTimelineTouch(event.pointerId), true);
+window.addEventListener('pointerup', (event) => {
+  if (!timelineUsesTouchEvents) endTimelineTouch(event.pointerId);
+}, true);
+window.addEventListener('pointercancel', (event) => {
+  if (!timelineUsesTouchEvents) endTimelineTouch(event.pointerId);
+}, true);
 window.addEventListener('blur', cancelTimelineTouches);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) cancelTimelineTouches();

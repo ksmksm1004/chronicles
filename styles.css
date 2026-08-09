@@ -98,6 +98,9 @@ body {
   touch-action:pan-x pan-y;
   overscroll-behavior-x:contain;
 }
+.section-scroll[data-zoom-key] *{
+  touch-action:pan-x pan-y;
+}
 .axis, .lane, .split-marker { position:relative; }
 .axis { height:3.2rem; border-bottom:1px solid var(--grid); margin-bottom:.7rem; }
 .tick { position:absolute; transform:translateX(-50%); color:var(--muted); font-size:.8rem; }
